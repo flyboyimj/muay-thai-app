@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoachMe — Muay Thai</title>
+<meta name="description" content="Self-coaching Muay Thai training app — weekly programs, a combo library with autonomy drills, and a built-in round timer.">
+<meta name="theme-color" content="#0d0d1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CoachMe">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+  :root {
+    --red: #e63946;
+    --dark-red: #c1121f;
+    --gold: #f4a261;
+    --dark: #1a1a2e;
+    --darker: #0d0d1a;
+    --card: #16213e;
+    --card2: #1e2a4a;
+    --text: #e8e8f0;
+    --muted: #8892b0;
+    --border: rgba(255,255,255,0.08);
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--darker); color: var(--text); min-height: 100vh; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 24px; background: var(--dark);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.5px; }
+  .logo span { color: var(--red); }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .level-badge {
+    font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--gold);
+    background: rgba(244,162,97,0.12); border: 1px solid rgba(244,162,97,0.3);
+    padding: 4px 12px; border-radius: 20px; cursor: pointer; display: none;
+  }
+  .level-badge:hover { background: rgba(244,162,97,0.2); }
+
+  /* NAV TABS */
+  .nav-tabs { display: none; gap: 2px; }
+  .nav-tab {
+    padding: 6px 16px; border-radius: 8px; font-size: 0.85rem; font-weight: 600;
+    background: transparent; color: var(--muted); border: none; cursor: pointer; transition: all 0.15s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { background: rgba(230,57,70,0.15); color: var(--red); }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ONBOARDING */
+  #screen-onboarding {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 40px 24px; text-align: center;
+  }
+  .oi-kru { font-size: 3.5rem; margin-bottom: 16px; }
+  .oi-title { font-size: 2.2rem; font-weight: 800; line-height: 1.2; }
+  .oi-title span { color: var(--red); }
+  .oi-sub { color: var(--muted); margin: 12px 0 40px; font-size: 1rem; max-width: 400px; }
+  .level-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 520px; }
+  .level-card {
+    background: var(--card); border: 2px solid var(--border);
+    border-radius: var(--radius); padding: 24px 20px;
+    cursor: pointer; transition: all 0.2s; text-align: left;
+  }
+  .level-card:hover { border-color: var(--red); background: var(--card2); transform: translateY(-2px); }
+  .level-card .lc-icon { font-size: 2rem; margin-bottom: 10px; }
+  .level-card .lc-name { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+  .level-card .lc-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+
+  /* DASHBOARD */
+  #screen-dashboard { padding: 28px 24px; max-width: 900px; margin: 0 auto; }
+  .greeting { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+  .greeting span { color: var(--red); }
+  .greeting-sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 28px; }
+  .section-title {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--muted); margin-bottom: 14px;
+  }
+
+  /* Week nav */
+  .week-nav { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 18px; }
+  .week-nav-label { font-size: 0.82rem; font-weight: 700; color: var(--gold); }
+  .week-nav .btn { padding: 6px 14px; font-size: 0.78rem; }
+  .week-nav .btn[disabled] { opacity: 0.35; cursor: default; pointer-events: none; }
+
+  /* Week strip */
+  .week-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 28px; scrollbar-width: none; }
+  .week-strip::-webkit-scrollbar { display: none; }
+  .day-pill {
+    flex-shrink: 0; background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 100px; padding: 8px 18px; cursor: pointer; transition: all 0.15s;
+    text-align: center; min-width: 80px;
+  }
+  .day-pill:hover { border-color: var(--red); }
+  .day-pill.active { border-color: var(--red); background: rgba(230,57,70,0.15); }
+  .day-pill.rest { opacity: 0.5; cursor: default; }
+  .day-pill .dp-name { font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .day-pill .dp-type { font-size: 0.82rem; font-weight: 700; margin-top: 2px; }
+  .day-pill.active .dp-name { color: var(--red); }
+
+  /* Session card */
+  .session-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 28px; }
+  .sc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+  .sc-title { font-size: 1.2rem; font-weight: 800; }
+  .sc-meta { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
+  .sc-badge { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 5px 12px; border-radius: 20px; white-space: nowrap; }
+  .badge-technique { background: rgba(100,149,237,0.15); color: #6495ed; }
+  .badge-conditioning { background: rgba(230,57,70,0.15); color: var(--red); }
+  .badge-sparring { background: rgba(244,162,97,0.15); color: var(--gold); }
+  .badge-rest { background: rgba(136,146,176,0.15); color: var(--muted); }
+  .badge-strength { background: rgba(72,199,142,0.15); color: #48c78e; }
+  .badge-punch { background: rgba(100,149,237,0.15); color: #6495ed; }
+  .badge-kick  { background: rgba(230,57,70,0.15);  color: var(--red); }
+  .badge-mixed { background: rgba(244,162,97,0.15); color: var(--gold); }
+  .badge-knee  { background: rgba(199,125,255,0.15); color: #c77dff; }
+  .badge-elbow { background: rgba(72,199,142,0.15);  color: #48c78e; }
+
+  .drill-list { list-style: none; }
+  .drill-item { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .drill-item:last-child { border-bottom: none; }
+  .drill-num {
+    flex-shrink: 0; width: 28px; height: 28px;
+    background: rgba(230,57,70,0.15); border: 1px solid rgba(230,57,70,0.3);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; color: var(--red);
+  }
+  .drill-body { flex: 1; }
+  .drill-name { font-size: 0.9rem; font-weight: 600; }
+  .drill-detail { font-size: 0.8rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .drill-tag { display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; margin-top: 5px; background: rgba(244,162,97,0.12); color: var(--gold); }
+
+  /* Tips */
+  .tips-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); gap: 14px; margin-bottom: 28px; }
+  .tip-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .tip-icon { font-size: 1.5rem; margin-bottom: 8px; }
+  .tip-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+  .tip-body { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+  /* Program table */
+  .program-table { width: 100%; border-collapse: collapse; }
+  .program-table th { text-align: left; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .program-table td { padding: 10px 12px; font-size: 0.85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .program-table tr:last-child td { border-bottom: none; }
+  .program-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── COMBOS SCREEN ── */
+  #screen-combos { padding: 28px 24px; max-width: 900px; margin: 0 auto; }
+
+  /* Legend */
+  .legend-grid {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px;
+  }
+  .legend-chip {
+    font-size: 0.78rem; font-weight: 700;
+    padding: 5px 12px; border-radius: 20px;
+    background: var(--card); border: 1px solid var(--border);
+  }
+  .legend-chip .lc-key { color: var(--red); margin-right: 4px; }
+
+  /* Filter tabs */
+  .filter-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 16px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;
+    background: var(--card); border: 1.5px solid var(--border);
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text); }
+  .filter-btn.active { border-color: var(--red); background: rgba(230,57,70,0.12); color: var(--text); }
+
+  /* Combo cards */
+  .combo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 14px; margin-bottom: 32px; }
+  .combo-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; cursor: default;
+    transition: border-color 0.15s;
+  }
+  .combo-card:hover { border-color: rgba(255,255,255,0.15); }
+  .combo-card { cursor: pointer; position: relative; }
+  .combo-card.selected { border-color: var(--red); background: rgba(230,57,70,0.08); }
+  .combo-card-top { display: flex; align-items: flex-start; gap: 10px; }
+  .combo-check {
+    flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px;
+    border-radius: 5px; border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 800; color: #fff;
+    background: transparent; transition: all 0.15s;
+  }
+  .combo-card.selected .combo-check { background: var(--red); border-color: var(--red); }
+  .selection-bar {
+    display: none; align-items: center; justify-content: space-between;
+    background: rgba(230,57,70,0.1); border: 1px solid rgba(230,57,70,0.3);
+    border-radius: var(--radius); padding: 12px 18px; margin-bottom: 18px;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .selection-bar span { font-size: 0.85rem; font-weight: 700; }
+  .combo-notation {
+    font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px;
+    margin-bottom: 8px; font-family: 'Courier New', monospace;
+    color: var(--text);
+  }
+  .combo-notation .hit { color: var(--red); }
+  .combo-notation .kick-hit { color: var(--gold); }
+  .combo-notation .sep { color: var(--muted); margin: 0 2px; }
+  .combo-name { font-size: 0.82rem; font-weight: 700; margin-bottom: 5px; }
+  .combo-cue { font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+  .combo-cat { display: inline-block; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 9px; border-radius: 10px; margin-top: 8px; }
+
+  /* ── AUTONOMY DRILL ── */
+  .drill-section {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 32px;
+  }
+  .drill-section-title { font-size: 1rem; font-weight: 800; margin-bottom: 4px; }
+  .drill-section-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 20px; }
+  .drill-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; }
+  .drill-controls label { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+  .drill-controls select {
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 12px; border-radius: 8px; font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .drill-stage {
+    display: none; text-align: center; padding: 20px 0;
+  }
+  .drill-stage.active { display: block; }
+  .drill-combo-display {
+    font-size: 2.4rem; font-weight: 900; letter-spacing: 2px;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 6px; min-height: 3.2rem;
+    transition: opacity 0.15s;
+  }
+  .drill-combo-display .hit { color: var(--red); }
+  .drill-combo-display .kick-hit { color: var(--gold); }
+  .drill-combo-display .sep { color: var(--muted); }
+  .drill-combo-name { font-size: 0.9rem; color: var(--muted); margin-bottom: 20px; font-weight: 600; }
+  .drill-progress-bar {
+    width: 100%; height: 6px; background: var(--border);
+    border-radius: 3px; overflow: hidden; margin-bottom: 18px;
+  }
+  .drill-progress-fill {
+    height: 100%; background: var(--red);
+    border-radius: 3px; transition: width linear;
+    width: 100%;
+  }
+  .drill-count { font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 22px; border-radius: 8px; font-size: 0.88rem;
+    font-weight: 600; cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .btn-primary { background: var(--red); color: #fff; }
+  .btn-primary:hover { background: var(--dark-red); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  /* ── TIMER SCREEN ── */
+  #screen-timer { padding: 28px 24px; max-width: 600px; margin: 0 auto; }
+
+  .timer-phase-bar {
+    text-align: center; margin-bottom: 24px;
+  }
+  .timer-phase-label {
+    display: inline-block; font-size: 0.78rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 2px;
+    padding: 5px 18px; border-radius: 20px; transition: all 0.3s;
+  }
+  .phase-idle    { background: rgba(136,146,176,0.15); color: var(--muted); }
+  .phase-lead    { background: rgba(244,162,97,0.2);   color: var(--gold); }
+  .phase-round   { background: rgba(230,57,70,0.2);    color: var(--red); }
+  .phase-rest    { background: rgba(100,149,237,0.2);  color: #6495ed; }
+  .phase-done    { background: rgba(72,199,142,0.2);   color: #48c78e; }
+
+  /* Round dots */
+  .round-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+  .round-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
+    transition: all 0.3s;
+  }
+  .round-dot.done    { background: var(--red); border-color: var(--red); }
+  .round-dot.current { background: transparent; border-color: var(--red); box-shadow: 0 0 0 3px rgba(230,57,70,0.25); }
+
+  /* SVG Ring */
+  .timer-ring-wrap { display: flex; justify-content: center; margin-bottom: 28px; position: relative; }
+  .timer-ring-wrap svg { transform: rotate(-90deg); }
+  .ring-bg   { fill: none; stroke: var(--border); }
+  .ring-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset 0.9s linear, stroke 0.4s; }
+  .timer-center {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    text-align: center; pointer-events: none;
+  }
+  .timer-time {
+    font-size: 3.2rem; font-weight: 900; letter-spacing: -2px;
+    font-variant-numeric: tabular-nums; line-height: 1;
+    transition: color 0.3s;
+  }
+  .timer-round-sub { font-size: 0.82rem; color: var(--muted); font-weight: 600; margin-top: 4px; }
+
+  /* Controls */
+  .timer-controls { display: flex; justify-content: center; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+  .timer-btn {
+    min-width: 120px; padding: 12px 24px; border-radius: 10px;
+    font-size: 0.95rem; font-weight: 700; cursor: pointer; border: none;
+    transition: all 0.15s;
+  }
+  .timer-btn-start  { background: var(--red); color: #fff; }
+  .timer-btn-start:hover  { background: var(--dark-red); }
+  .timer-btn-pause  { background: rgba(244,162,97,0.2); color: var(--gold); border: 1px solid rgba(244,162,97,0.4); }
+  .timer-btn-pause:hover  { background: rgba(244,162,97,0.3); }
+  .timer-btn-reset  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .timer-btn-reset:hover  { color: var(--text); border-color: rgba(255,255,255,0.2); }
+
+  /* Settings */
+  .timer-settings { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .settings-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 18px; }
+  .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 0.88rem; font-weight: 600; }
+  .setting-sub   { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .stepper { display: flex; align-items: center; gap: 0; }
+  .step-btn {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--text); font-size: 1.1rem; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s; line-height: 1;
+  }
+  .step-btn:hover { background: rgba(230,57,70,0.15); border-color: var(--red); color: var(--red); }
+  .step-val {
+    min-width: 60px; text-align: center; font-size: 0.95rem; font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes pulse-ring {
+    0%   { opacity: 1; }
+    50%  { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  .timer-time.warning { color: var(--red); animation: pulse-ring 0.6s infinite; }
+
+  @media (max-width: 480px) {
+    .level-grid { grid-template-columns: 1fr; }
+    .oi-title { font-size: 1.8rem; }
+    .tips-grid { grid-template-columns: 1fr; }
+    .combo-grid { grid-template-columns: 1fr; }
+    .drill-combo-display { font-size: 1.7rem; }
+    .timer-time { font-size: 2.4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="main-nav" style="display:none">
+  <div class="logo">Coach<span>Me</span> <span style="font-size:0.7rem;color:var(--muted);font-weight:400">Muay Thai</span></div>
+  <div class="nav-right">
+    <div class="nav-tabs" id="nav-tabs">
+      <button class="nav-tab active" onclick="showTab('training')">Training</button>
+      <button class="nav-tab" onclick="showTab('combos')">Combos</button>
+      <button class="nav-tab" onclick="showTab('timer')">Timer</button>
+    </div>
+    <span class="level-badge" id="nav-level-badge" onclick="resetLevel()">Change Level</span>
+  </div>
+</nav>
+
+<!-- SCREEN: ONBOARDING -->
+<div class="screen active" id="screen-onboarding">
+  <div class="oi-kru">🥊</div>
+  <div class="oi-title">Your Personal<br><span>Muay Thai</span> Coach</div>
+  <p class="oi-sub">Train smart when you're away from the gym. Pick your level to get a program built for you.</p>
+  <div class="level-grid">
+    <div class="level-card" onclick="selectLevel('beginner')">
+      <div class="lc-icon">🌱</div>
+      <div class="lc-name">Beginner</div>
+      <div class="lc-desc">New to Muay Thai or under 6 months. Learning the basics of stance, guard, and strikes.</div>
+    </div>
+    <div class="level-card" onclick="selectLevel('intermediate')">
+      <div class="lc-icon">⚡</div>
+      <div class="lc-name">Intermediate</div>
+      <div class="lc-desc">6 months – 2 years. Comfortable with fundamentals, building combinations and timing.</div>
+    </div>
+    <div class="level-card" onclick="selectLevel('advanced')">
+      <div class="lc-icon">🔥</div>
+      <div class="lc-name">Advanced</div>
+      <div class="lc-desc">2+ years of consistent training. Refining technique, sparring regularly, possibly competing.</div>
+    </div>
+    <div class="level-card" onclick="selectLevel('competitor')">
+      <div class="lc-icon">🏆</div>
+      <div class="lc-name">Competitor</div>
+      <div class="lc-desc">Active or preparing to fight. Structured fight camp programming and gameplan work.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: DASHBOARD (Training) -->
+<div class="screen" id="screen-dashboard">
+  <div id="dash-inner"></div>
+</div>
+
+<!-- SCREEN: COMBOS -->
+<div class="screen" id="screen-combos">
+  <div id="combos-inner"></div>
+</div>
+
+<!-- SCREEN: TIMER -->
+<div class="screen" id="screen-timer">
+  <div id="timer-inner"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  PROGRAMS DATA
+// ═══════════════════════════════════════════════════
+const PROGRAMS = {
+  beginner: {
+    label: "Beginner", tagline: "Build your foundation. Every champion started here.",
+    focus: "Stance · Guard · Basic strikes · Footwork", programLength: 4,
+    weeks: [
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Stance & Basic Guard", duration:"40 min", drills:[
+        {name:"Muay Thai Stance Drill", reps:"3 × 2 min", detail:"Orthodox or southpaw — feet shoulder-width, lead foot 45°, hands up at jaw. Walk forward and back without crossing feet."},
+        {name:"Guard & Head Movement", reps:"3 × 90 sec", detail:"Hands high, chin down. Practice slipping left/right and rolling under a slow jab using a mirror or doorframe."},
+        {name:"Jab–Cross", reps:"5 × 2 min shadow", detail:"Throw 1–2 in front of a mirror. Focus on hip rotation on the cross, return guard after every shot."},
+        {name:"Teep (Front Push Kick)", reps:"3 × 20 each leg", detail:"Chamber the knee high, push heel out, snap back. Keep guard up throughout."},
+      ]},
+      { day:"Tue", type:"Conditioning", badge:"conditioning", title:"Base Cardio & Core", duration:"35 min", drills:[
+        {name:"Jump Rope", reps:"5 × 3 min (1 min rest)", detail:"Alternate rhythm — both feet together for 1 min, single bounce for 1 min, alternate feet for 1 min."},
+        {name:"Plank Circuit", reps:"3 rounds", detail:"Standard plank 45 sec → side plank 30 sec each → hollow body hold 30 sec. Rest 45 sec between rounds."},
+        {name:"Burpee-to-Sprawl", reps:"4 × 10", detail:"Replicate the scramble of a takedown defence. Drop, shoot hips back flat, push up, jump."},
+        {name:"Mountain Climbers", reps:"3 × 30 sec", detail:"Keep hips level. Drive knees alternately at a controlled pace."},
+      ]},
+      { day:"Wed", type:"Rest / Stretch", badge:"rest", title:"Active Recovery", duration:"20 min", drills:[
+        {name:"Hip Flexor Stretch", reps:"2 min each side", detail:"Lunge position, rear knee on ground. Posterior pelvic tilt to deepen the stretch. Essential for high kicks later."},
+        {name:"Thoracic Rotation", reps:"10 reps each side", detail:"Seated, cross arms over chest. Rotate through the mid-back — not the lower back."},
+        {name:"Calf & Achilles", reps:"90 sec each side", detail:"Against a wall: straight-knee for gastrocnemius, bent-knee for Achilles/soleus."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Kicks Intro — Roundhouse", duration:"45 min", drills:[
+        {name:"Hip Mobility Warm-up", reps:"5 min", detail:"Leg swings front-back, lateral swings, hip circles. Do this before every kick session."},
+        {name:"Thai Roundhouse (Lead Leg)", reps:"4 × 15 each side", detail:"Pivot on the ball of the standing foot, swing the hip through, strike with the shin. Land back in stance."},
+        {name:"Low Kick to Body Kick Flow", reps:"3 × 2 min shadow", detail:"Alternate between targeting the thigh and the ribs. Same swing — change the pivot angle only."},
+        {name:"Kick + Return to Guard", reps:"3 × 20 each side", detail:"After every kick, snap back fast and raise your guard before the next rep."},
+      ]},
+      { day:"Fri", type:"Conditioning", badge:"conditioning", title:"Fight Conditioning Circuit", duration:"40 min", drills:[
+        {name:"Shadow Boxing", reps:"4 × 3 min (1 min rest)", detail:"Move around the room, throw 1-2-teep combos, stay light on your feet. No standing still."},
+        {name:"Knee Strikes on Heavy Bag / Chair", reps:"3 × 20 each side", detail:"Grip the bag (or back of a sturdy chair), drive knees into target zone. Hips forward on impact."},
+        {name:"Sprint Intervals", reps:"8 × 20 sec all-out, 40 sec walk", detail:"On the spot or in a corridor. Mimics the burst-recover rhythm of a fight round."},
+        {name:"Cool-down: Forward Fold & Glutes", reps:"5 min", detail:"Seated hamstring stretch into pigeon pose each side."},
+      ]},
+      { day:"Sat", type:"Technique", badge:"technique", title:"Elbows & Knees Fundamentals", duration:"50 min", drills:[
+        {name:"Elbow Range Entry Drill", reps:"5 min shadow", detail:"From your stance, take a small step in and feel the distance where an elbow lands. Too far = a punch. Too close = no room to swing. Practice finding that slot on every jab-cross entry."},
+        {name:"Horizontal Elbow – Sok Tad", reps:"4 × 20 each side", detail:"Pivot the lead foot slightly, drive the elbow horizontally across at head height. Forearm must be parallel to the floor. Return to guard after every rep."},
+        {name:"Uppercut Elbow – Sok Ngad", reps:"4 × 20 each side", detail:"Drive the elbow upward from hip level, picture lifting the chin from underneath. Compact motion — not a wild swing. Combine with horizontal: throw one of each, same arm."},
+        {name:"Elbow Combination: EH – EU", reps:"3 × 20 each side", detail:"Horizontal elbow cuts the temple, immediately follow with uppercut elbow under the chin. One fluid entry, two angles. Drill slowly, then add speed once the flow is clean."},
+        {name:"Straight Knee – Khao Trong", reps:"4 × 20 each leg", detail:"Grip the back of a chair or bag, pull it down, drive the knee straight up into the body. Hip thrusts forward on contact. Snap the knee back to stance — don't hold it extended."},
+        {name:"Diagonal Knee – Khao Chiang", reps:"3 × 20 each leg", detail:"Same collar-tie grip, but angle the knee across the opponent's body rather than straight up. Targets the ribs on the far side. The hip rotates slightly outward on impact."},
+        {name:"Clinch Pull-Pull-Knee Rhythm", reps:"3 × 90 sec on wall", detail:"Double collar-tie on the wall: pull-pull-knee in a 3-beat rhythm. The pulls create the off-balance that makes the knee land. Practise both straight and diagonal knee in this rhythm."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Full Rest Day", duration:"—", drills:[
+        {name:"Rest & Recover", reps:"All day", detail:"Hydrate, eat protein-rich meals, sleep 8 hours. Your muscles grow on rest days, not training days."},
+      ]},
+    ],
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Combination Building", duration:"40 min", drills:[
+        {name:"Jab-Cross-Teep Flow", reps:"5 × 2 min shadow", detail:"Add the teep as a third beat after your jab-cross. It pushes them away right after they've eaten two punches — a clean way to end a combo and reset range."},
+        {name:"Lead Hook Off the Jab", reps:"4 × 15 each side", detail:"Jab to occupy their guard, lead hook on the return without resetting your hand fully. Keep the elbow up and pivot the lead foot as you swing."},
+        {name:"Slip Outside the Jab (Intro)", reps:"3 × 90 sec", detail:"Have a partner (or imagine one) jab at you. Slip your head just outside the line of the punch. Keep your hands up throughout — slipping isn't an excuse to drop guard."},
+        {name:"1-2-3 on the Bag", reps:"4 × 2 min", detail:"Jab-cross-lead hook, full combination, full power. Reset guard after every rep before starting the next."},
+      ]},
+      { day:"Tue", type:"Conditioning", badge:"conditioning", title:"Bag Work Endurance", duration:"35 min", drills:[
+        {name:"Continuous Bag Combos", reps:"4 × 3 min (1 min rest)", detail:"Never stop moving your feet around the bag. Mix in everything you've learned so far — punches, teep, low kick."},
+        {name:"Core Circuit", reps:"3 rounds", detail:"Russian twists 20 reps → leg raises 15 reps → plank 45 sec. Rest 45 sec between rounds. Core strength protects your ribs in the clinch."},
+        {name:"Lateral Shuffle Footwork", reps:"4 × 30 sec", detail:"Quick side-to-side steps without crossing your feet. Stay low, knees soft, hands up the whole time."},
+      ]},
+      { day:"Wed", type:"Rest / Stretch", badge:"rest", title:"Active Recovery", duration:"20 min", drills:[
+        {name:"Shoulder & Chest Opener", reps:"90 sec each side", detail:"Doorframe stretch — arm bent at 90°, lean forward gently. Shadow boxing tightens the chest and shoulders fast; this undoes it."},
+        {name:"Lower Back & Glute Release", reps:"2 min each side", detail:"Seated figure-four stretch. Sit tall, cross ankle over opposite knee, hinge forward from the hips."},
+        {name:"Breathing Reset Drill", reps:"5 min", detail:"Slow nasal breathing, 4 sec in / 6 sec out. Calms the nervous system after a week of training stress."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Kicks Continued", duration:"45 min", drills:[
+        {name:"Body Kick Intro", reps:"4 × 15 each side", detail:"Same roundhouse mechanics as your low kick, just chamber slightly higher to target the ribs. Keep your guard hand up to protect your head as you turn."},
+        {name:"Low Kick–Body Kick Combo", reps:"3 × 2 min shadow", detail:"Low kick first to draw their guard down to check, body kick second once their hands are occupied lower."},
+        {name:"Checking the Low Kick (Defence)", reps:"3 × 15 each side", detail:"Lift your knee to block an incoming low kick on your shin, not your thigh. Practice the lift-and-reset rhythm slowly first."},
+        {name:"Teep–Kick Combo Flow", reps:"3 × 2 min", detail:"Teep to control range, follow immediately with a low or body kick on the same or opposite leg. Keep your balance — don't rush the transition."},
+      ]},
+      { day:"Fri", type:"Conditioning", badge:"conditioning", title:"Circuit Training", duration:"40 min", drills:[
+        {name:"Bodyweight Circuit", reps:"4 rounds", detail:"Squats 15 → push-ups 12 → sit-ups 15 → jumping jacks 20. Minimal rest between exercises, 60 sec between rounds."},
+        {name:"Shadow Boxing Active Recovery", reps:"3 × 2 min", detail:"Light pace, full technique focus. Use this to practice the combos from earlier in the week without fatigue affecting your form."},
+        {name:"Sprint Intervals", reps:"6 × 20 sec all-out, 40 sec walk", detail:"On the spot or in a corridor. Keeps the burst-recover conditioning building week over week."},
+        {name:"Cool-down Stretch", reps:"5 min", detail:"Full-body static stretch — hamstrings, hips, shoulders, calves."},
+      ]},
+      { day:"Sat", type:"Technique", badge:"technique", title:"Elbow & Knee Combinations", duration:"50 min", drills:[
+        {name:"Horizontal Elbow Review", reps:"3 × 20 each side", detail:"Quick refresh of last week's horizontal elbow (Sok Tad). Step in, pivot, drive across at head height. Build back the muscle memory before adding anything new."},
+        {name:"Adding the Diagonal Elbow (EX)", reps:"3 × 15 each side", detail:"New this week: sweep the elbow from high-outside to low-inside across the cheekbone. Different angle than horizontal — drill it slowly before pairing it with anything else."},
+        {name:"Straight + Diagonal Knee Link", reps:"4 × 15 each leg", detail:"From last week's straight knee (Khao Trong), now link it with the diagonal knee (Khao Chiang) on the same grip. Pull-knee-shift-knee in one continuous motion."},
+        {name:"Punch–Elbow–Knee Entry Flow", reps:"3 × 2 min shadow", detail:"Jab-cross to close range, horizontal elbow on entry, slide to clinch, straight knee. This links everything you've learned across both weeks into one sequence."},
+        {name:"Clinch Control & Exit", reps:"3 × 90 sec", detail:"Double collar-tie, control their head, throw one knee, then push them away cleanly to reset distance. Controlling the exit is as important as the knee itself."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Full Rest Day", duration:"—", drills:[
+        {name:"Rest & Recover", reps:"All day", detail:"Two weeks in — review what's clicking and what still feels clunky. Write it down if you can. Then rest completely."},
+      ]},
+    ]
+    ],
+    tips:[
+      {icon:"👁️", title:"Watch Your Guard", body:"Every drill ends with hands back at jaw height. Drill the habit now — it protects you forever."},
+      {icon:"🦶", title:"Pivot, Don't Swing", body:"Power in a roundhouse comes from pivoting the standing foot, not swinging the leg."},
+      {icon:"🪞", title:"Use a Mirror", body:"Shadow box facing a mirror daily. You'll spot bad habits your trainer would catch in the gym."},
+      {icon:"😤", title:"Breathe Out on Impact", body:"Exhale sharply on every strike. It tightens your core, adds snap, and protects your ribs."},
+    ]
+  },
+  intermediate: {
+    label: "Intermediate", tagline: "Sharpen your weapons. Build your combinations.",
+    focus: "Combinations · Timing · Teep game · Clinch", programLength: 6,
+    weeks: [
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Combination Work", duration:"50 min", drills:[
+        {name:"Warm-up Shadow Boxing", reps:"3 × 3 min", detail:"Light and flowing. Touch all weapons — jab, cross, hook, kick. No power yet."},
+        {name:"Jab–Cross–Lead Hook–Rear Low Kick", reps:"5 × 2 min on bag", detail:"1–2–3–low kick. The low kick is a surprise — don't telegraph by loading up early."},
+        {name:"Teep–Cross–Lead Body Kick", reps:"5 × 2 min", detail:"Teep creates space, cross breaks the guard, body kick lands to the floating ribs."},
+        {name:"Counter: Slip–Cross–Lead Hook", reps:"3 × 3 min shadow", detail:"Imagine a jab coming, slip outside, fire cross and hook. Stay compact — no wild swings."},
+        {name:"Pad-work Mirror Drill", reps:"4 × 2 min", detail:"Face a wall. Call your own combinations. Touch the wall as if it's pads."},
+      ]},
+      { day:"Tue", type:"Strength", badge:"strength", title:"Muay Thai Strength Session", duration:"45 min", drills:[
+        {name:"Single-Leg Romanian Deadlift", reps:"4 × 8 each side", detail:"Slow eccentric (3 sec down). Builds balance and posterior chain power for kicking."},
+        {name:"Push-up Variation Circuit", reps:"4 × 12", detail:"Standard → wide → diamond → explosive clap. Rest 60 sec between rounds."},
+        {name:"Bulgarian Split Squat", reps:"3 × 10 each side", detail:"Rear foot elevated, drive through front heel. Mimics the stance and power base."},
+        {name:"Medicine Ball Rotational Throw", reps:"3 × 10 each side", detail:"Against a wall. Rotate from hips — this IS your cross/kick power."},
+        {name:"Dead Hang → Scapular Pull-ups", reps:"3 × 8", detail:"Develops back strength for a strong clinch grip and posture under pressure."},
+      ]},
+      { day:"Wed", type:"Conditioning", badge:"conditioning", title:"Fight Pace Cardio", duration:"45 min", drills:[
+        {name:"Heavy Bag Rounds", reps:"5 × 3 min (1 min rest)", detail:"Treat it like a real fight. Move around the bag, vary range, don't just stand and bang."},
+        {name:"Sprawl & Strike Circuits", reps:"4 × 90 sec", detail:"Drop to a sprawl every 15 sec, pop up and immediately throw a 2-punch combo."},
+        {name:"Jump Rope — Double Under Focus", reps:"5 × 3 min", detail:"Work on double-unders for 30 sec each minute. Coordination crosses over to fast footwork."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Kicking Mechanics & Power", duration:"50 min", drills:[
+        {name:"Hip Mobility Flow", reps:"8 min", detail:"World's greatest stretch, leg swings, 90/90 hip switch. Do not skip."},
+        {name:"Rear Roundhouse — Power Focus", reps:"5 × 10 each side", detail:"Slow chamber, then explosive rotation. Aim to hear a single sharp crack — not a slap."},
+        {name:"Switch Kick Drill", reps:"4 × 15 each side", detail:"Quick step-switch then fire the (new) rear leg. Practice the switch fast enough to disguise it."},
+        {name:"High Kick Conditioning", reps:"4 × 10 each side", detail:"Head-level target. If you can't reach, kick to shoulder height and work flexibility over time."},
+        {name:"Kick Catching Counter (Wall Drill)", reps:"3 × 2 min", detail:"Simulate catching a kick: step in, imaginary scoop, step outside and shove. Then counter."},
+      ]},
+      { day:"Fri", type:"Sparring Prep", badge:"sparring", title:"Timing & Distance Drills", duration:"45 min", drills:[
+        {name:"Shadowboxing — Footwork Focus", reps:"5 × 3 min", detail:"No combination longer than 3 strikes. After every combo, move off-angle."},
+        {name:"Reaction Shadow (Timer)", reps:"4 × 2 min", detail:"Set a random beep timer. On beep: jab. On double beep: cover/slip. Builds snap."},
+        {name:"Teep Defence Drill", reps:"3 × 20 each side", detail:"As your shadow throws a teep, step to outside and return your own teep or body kick."},
+        {name:"Clinch Transitions", reps:"4 × 90 sec", detail:"Enter the clinch after jab-cross, control, throw one knee, then exit with a push."},
+      ]},
+      { day:"Sat", type:"Technique", badge:"technique", title:"Elbows & Knees Development", duration:"55 min", drills:[
+        {name:"Horizontal Elbow – Sok Tad (Bag)", reps:"4 × 20 each side", detail:"Step in off a jab, drive the lead elbow horizontally across at head height. The step closes the range — without it, you're throwing air. Chin stays tucked throughout."},
+        {name:"Uppercut + Downward Elbow Flow", reps:"3 × 20 each side", detail:"Lead uppercut elbow (EU) drives up under the chin, then immediately follow with a downward elbow (ED) as if they ducked into it. Two opposite angles, same arm, no reset between."},
+        {name:"Diagonal Elbow – Sok Chieng", reps:"3 × 15 each side", detail:"Sweep the elbow from high-outside to low-inside across the cheekbone. The diagonal path is harder to block than horizontal because it comes from an unexpected angle. Pivot your foot slightly as you swing."},
+        {name:"Straight Knee on Bag – Khao Trong", reps:"4 × 20 each leg", detail:"Grip the bag, pull it down, drive your knee straight up. Hip pushes forward at the moment of contact. Snap back immediately — a held knee is a telegraphed knee."},
+        {name:"Diagonal + Curve Knee Combo", reps:"3 × 20 each leg", detail:"Diagonal knee (Khao Chiang) across the ribs, then immediately curve knee (Khao Khong) which arcs in from the outside. Two knees, two trajectories, same clinch grip. The curve knee catches them as they lean to avoid the diagonal."},
+        {name:"Long Knee – Khao Yao", reps:"3 × 15 each leg", detail:"Instead of snapping up, extend the knee forward and outward in a pushing thrust into the solar plexus or stomach. Breaks their posture forward. Use from a looser clinch where there isn't room for a full snap."},
+        {name:"Elbow-Into-Clinch-Knee Flow", reps:"3 × 2 min shadow", detail:"Horizontal elbow to close range, step into double collar-tie, two knees, exit. Drill the full sequence as one motion. This is a complete inside-fighting sequence."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Rest & Reflect", duration:"—", drills:[
+        {name:"Active Recovery or Full Rest", reps:"—", detail:"Light walk, yoga, or complete rest. Review your week — what felt sharp? What needs more reps?"},
+      ]},
+    ],
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Counter Striking Basics", duration:"50 min", drills:[
+        {name:"Warm-up Shadow Boxing", reps:"3 × 3 min", detail:"Light and flowing — same as always, no power yet, just get the body moving and the weapons loose."},
+        {name:"Parry–Counter Cross", reps:"4 × 2 min shadow", detail:"Parry an imagined jab with your lead hand, fire your cross straight through the gap it leaves. Compact parry, fast counter."},
+        {name:"Slip–Counter Hook", reps:"4 × 2 min shadow", detail:"Slip outside the jab, counter with a tight lead hook. The slip and the hook should feel like one motion, not two separate steps."},
+        {name:"Check–Counter Low Kick", reps:"4 × 15 each side", detail:"Check an incoming low kick with your shin, then immediately fire your own low kick back on the same leg while they're recovering balance."},
+        {name:"Bag Combo: Counter Chain", reps:"4 × 2 min", detail:"String parry-cross, slip-hook, and check-counter together in sequence on the bag. Builds the habit of countering instead of just attacking."},
+      ]},
+      { day:"Tue", type:"Strength", badge:"strength", title:"Lower Body Power", duration:"45 min", drills:[
+        {name:"Barbell or Goblet Squat", reps:"4 × 8", detail:"Controlled tempo, full depth. Builds the base strength that every kick and knee draws from."},
+        {name:"Lateral Lunge", reps:"3 × 10 each side", detail:"Trains the side-to-side strength needed for pivoting kicks and defensive footwork."},
+        {name:"Calf Raises", reps:"4 × 15", detail:"Slow and controlled, full range. Strong calves hold up under repeated kicking volume."},
+        {name:"Standing Long Jump", reps:"4 × 5", detail:"Explosive hip drive from a standing start — directly transfers to kick and knee power."},
+      ]},
+      { day:"Wed", type:"Conditioning", badge:"conditioning", title:"Pad-Style Intervals", duration:"45 min", drills:[
+        {name:"Mirror Combo Calling", reps:"5 × 2 min", detail:"Call your own combinations out loud and throw them at a mirror or wall as if it's pads. Builds the connection between thought and reaction."},
+        {name:"Reaction Burst Rounds", reps:"4 × 90 sec", detail:"On a random beep, throw a 3-strike combo at full speed, then reset to guard and footwork until the next beep."},
+        {name:"Jump Rope Finisher", reps:"5 × 2 min", detail:"Keep the rhythm light and fast. Good cardio capper after combo-heavy work."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Kick Catching & Sweeps", duration:"50 min", drills:[
+        {name:"Catch the Low Kick", reps:"4 × 15 each side", detail:"Lift the knee and scoop the catch under their ankle as their kick lands on your shin. Practice slowly — timing matters more than speed at first."},
+        {name:"Catch–Push–Counter", reps:"4 × 2 min shadow", detail:"After catching, push them off-balance and fire your own kick or combo while they reset their stance."},
+        {name:"Off-Balance Sweep (Foot Sweep)", reps:"3 × 10 each side", detail:"After catching a kick, sweep the standing leg with your own foot to put them on the floor. Control, don't kick wildly at the leg."},
+        {name:"Defence-to-Offence Bag Flow", reps:"4 × 2 min", detail:"Simulate catch-push-counter on the bag by stepping in, 'catching' an imagined kick, and immediately countering with a 2-3 strike combo."},
+      ]},
+      { day:"Fri", type:"Sparring Prep", badge:"sparring", title:"Range Control", duration:"45 min", drills:[
+        {name:"Teep Range-Finding", reps:"4 × 2 min shadow", detail:"Use the teep purely to manage distance — not as a finishing strike. Practice stepping in and out of range behind it."},
+        {name:"In-and-Out Footwork", reps:"5 × 2 min", detail:"Step into striking range, throw 2 strikes, step back out immediately. Never stay in the pocket longer than your combo takes."},
+        {name:"Distance Drill with a Wall", reps:"3 × 3 min", detail:"Stand at arm's length from a wall, practice closing distance behind a jab and opening it back up behind a teep without touching the wall."},
+      ]},
+      { day:"Sat", type:"Technique", badge:"technique", title:"Elbow & Knee Combinations II", duration:"55 min", drills:[
+        {name:"Diagonal Elbow Review (Sok Chieng)", reps:"3 × 15 each side", detail:"Quick refresh from last week. Sweep high-outside to low-inside across the cheekbone — keep the pivot in your lead foot."},
+        {name:"Diagonal + Uppercut Elbow Pair", reps:"3 × 15 pairs each side", detail:"New combination this week: diagonal elbow first, then immediately uppercut elbow (EU) from below on the same arm. Two angles, no reset between them."},
+        {name:"Curve Knee Review + Add Long Knee", reps:"4 × 15 each leg", detail:"Refresh the curve knee (Khao Khong) from last week, then add the long knee (Khao Yao) — a pushing thrust rather than a snap. Alternate the two in the same clinch grip."},
+        {name:"Full Elbow-Knee Chain", reps:"3 × 2 min shadow", detail:"Horizontal elbow to enter, diagonal elbow follow-up, clinch, curve knee then long knee. The longest inside-fighting sequence you've drilled so far — go slow before adding speed."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Rest & Reflect", duration:"—", drills:[
+        {name:"Active Recovery or Full Rest", reps:"—", detail:"Light walk, yoga, or complete rest. Two weeks in — note which combinations are starting to feel automatic."},
+      ]},
+    ]
+    ],
+    tips:[
+      {icon:"🎯", title:"Quality Reps", body:"100 sloppy reps builds bad habits. 20 perfect reps builds skill. Slow down to speed up."},
+      {icon:"🧠", title:"Visualise Sparring", body:"During shadow, imagine a specific opponent. React to their imagined shots."},
+      {icon:"⚖️", title:"Balance Your Weapons", body:"If you only drill your right kick, you become predictable. Drill both sides equally."},
+      {icon:"🦵", title:"Shin Conditioning", body:"Lightly roll a wooden rolling pin down your shins daily. Gradual, consistent pressure works."},
+    ]
+  },
+  advanced: {
+    label: "Advanced", tagline: "Elevate every detail. The gap is in the refinements.",
+    focus: "Counters · Ring IQ · Clinch dominance · Speed-power", programLength: 8,
+    weeks: [
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Advanced Counter Striking", duration:"60 min", drills:[
+        {name:"Parry–Counter Flows", reps:"5 × 3 min shadow", detail:"Parry jab → step-in cross; parry cross → lead uppercut-body kick; catch kick → push-sweep."},
+        {name:"Pendulum Footwork + Kick", reps:"4 × 3 min", detail:"Step forward (bait), step back (draw their attack), catch & counter on their missed kick."},
+        {name:"Fake-High Kick–Low Kick", reps:"4 × 20 each side", detail:"Chamber high, redirect to thigh as they raise guard. Speed of redirect is the weapon."},
+        {name:"Combination Construction Drill", reps:"6 × 3 min bag", detail:"Work one 5+ strike combination for 3 min. Drill it until it fires automatically."},
+      ]},
+      { day:"Tue", type:"Strength", badge:"strength", title:"Power & Explosiveness", duration:"55 min", drills:[
+        {name:"Barbell or KB Hip Thrust", reps:"5 × 5 heavy", detail:"Direct transfer to kicking power. Drive explosively through the lockout."},
+        {name:"Plyometric Box Jump", reps:"4 × 6", detail:"Full jump, soft landing. Rest 90 sec. Develops fast-twitch fibre for explosive entries."},
+        {name:"Medicine Ball Slam", reps:"5 × 10", detail:"Arms overhead, maximum downward acceleration. Mimics the downward elbow energy."},
+        {name:"Loaded Carry (Farmer's Walk)", reps:"5 × 30m", detail:"Heavy dumbbells. Builds grip, posture, and stabilising muscles for the clinch."},
+        {name:"Single-Arm KB Press", reps:"4 × 8 each side", detail:"Rotational demand builds anti-rotation strength — holds your guard intact under pressure."},
+      ]},
+      { day:"Wed", type:"Conditioning", badge:"conditioning", title:"Fight Simulation", duration:"60 min", drills:[
+        {name:"5-Round Heavy Bag Sparring", reps:"5 × 5 min (2 min rest)", detail:"5-minute rounds to mirror real fight pacing. Move constantly, work all ranges."},
+        {name:"Tabata Strikes", reps:"8 × 20 sec / 10 sec rest", detail:"4 rounds per weapon: jab-cross, rear kicks, elbows in clinch, knees. 2 min rest between weapons."},
+        {name:"Active Recovery Rounds", reps:"2 × 3 min", detail:"Walk the bag slowly, very light technical touches. Practice your reset after hard output."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Elbows, Knees & Clinch Mastery", duration:"65 min", drills:[
+        {name:"Clinch Entries — 3 Routes", reps:"4 × 3 min shadow", detail:"Entry 1: after jab-cross; Entry 2: after eating a body shot; Entry 3: catch kick → slide in. Drill each entry 10 times, then mix."},
+        {name:"Straight Knee – Khao Trong", reps:"4 × 20 each leg", detail:"From double collar-tie: pull the head down, drive the knee straight up. Hip thrusts forward at contact. The pull is half the technique — don't skip it."},
+        {name:"Diagonal Knee – Khao Chiang", reps:"4 × 20 each leg", detail:"Same collar-tie, knee angles diagonally across to target the far ribs. Hip rotates slightly outward. Alternate straight and diagonal in the same clinch grip."},
+        {name:"Curve Knee – Khao Khong", reps:"3 × 15 each leg", detail:"Arc the knee in a curved path from outside inward to the hip or thigh. Catches opponents who've leaned sideways to avoid the diagonal knee."},
+        {name:"Long Knee – Khao Yao", reps:"3 × 15 each leg", detail:"Thrust the knee forward in a long pushing action from a loose clinch. Breaks their forward posture and drives into the solar plexus. Great after they start resisting your collar-tie."},
+        {name:"Horizontal Elbow – Sok Tad", reps:"4 × 20 each side", detail:"Enter from a jab-cross, drive the elbow horizontally across the temple. Pivot lead foot to generate torque. Forearm parallel to floor at all times."},
+        {name:"Uppercut + Downward Elbow Pair – EU / ED", reps:"3 × 20 pairs each side", detail:"Lead uppercut elbow (EU) from below, immediately downward elbow (ED) from above with the same arm. Two opposing angles: covers a rising guard and a ducking opponent in one sequence."},
+        {name:"Diagonal Elbow – Sok Chieng", reps:"3 × 15 each side", detail:"Sweep across the cheekbone from high-outside to low-inside. The unexpected trajectory bypasses a standard horizontal guard. Pivot and lean slightly into the swing for full extension."},
+        {name:"Elbow → Clinch → Knee → Exit Flow", reps:"4 × 90 sec shadow", detail:"Horizontal elbow to enter → slide to double collar-tie → straight knee + diagonal knee → teep exit. Each element flows directly into the next. This is your complete inside-fighting sequence."},
+        {name:"Neck Tie Switch Knees", reps:"3 × 90 sec", detail:"Switch collar-tie grip to the other side, throw diagonal knee from new angle, switch back, repeat. Forces the opponent to defend both flanks simultaneously."},
+      ]},
+      { day:"Fri", type:"Sparring Prep", badge:"sparring", title:"Ring IQ Drills", duration:"55 min", drills:[
+        {name:"Angle Shadow", reps:"5 × 3 min", detail:"Every combo ends with a lateral step or pivot — NEVER step back in a straight line."},
+        {name:"10-Second Burst + Reset", reps:"8 rounds", detail:"All-out 10 sec sprint on the bag, then reset: breathe, guard, active feet."},
+        {name:"Counter-Gameplan Drill", reps:"3 × 5 min shadow", detail:"Pick a fighter's style and construct a specific gameplan against them. Shadow it."},
+        {name:"Southpaw Entry Practice", reps:"3 × 3 min", detail:"If orthodox, drill moving to your left (away from southpaw rear hand). Drill the outside-angle entry."},
+      ]},
+      { day:"Sat", type:"Conditioning", badge:"conditioning", title:"Gas Tank Session", duration:"60 min", drills:[
+        {name:"Long Shadow — 8 Rounds", reps:"8 × 3 min", detail:"Match sparring pace throughout all 8 rounds. Extends your fight endurance ceiling."},
+        {name:"Clinch Stamina Drill", reps:"5 × 2 min", detail:"Continuous knees and shoves against a bag or wall — replicate extended clinch battles."},
+        {name:"Sprints", reps:"10 × 100m (or on-the-spot)", detail:"90 sec rest. Builds explosive short-burst conditioning that separates fighters late in rounds."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Recovery", duration:"—", drills:[
+        {name:"Full Rest or Light Yoga", reps:"—", detail:"Yin yoga, foam rolling, epsom salt bath. At advanced level, recovery quality determines training ceiling."},
+      ]},
+    ],
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Pressure & Angles", duration:"60 min", drills:[
+        {name:"Forward Pressure Shadow", reps:"5 × 3 min", detail:"Walk opponents down without rushing — small, controlled steps that cut off the ring. Every advance should close distance, not just close space."},
+        {name:"Cutting the Angle", reps:"4 × 3 min", detail:"Instead of stepping straight in, step on a 45° angle as you close distance. Forces them to reset their stance to face you."},
+        {name:"Pressure into Combination", reps:"5 × 3 min bag", detail:"Step pressure forward, then unload a 4+ strike combination the instant you're in range. The pressure itself is a setup, not just positioning."},
+        {name:"Wall/Rope Trapping Drill", reps:"4 × 2 min shadow", detail:"Imagine cutting an opponent off against the ropes or a wall. Practice the angled steps that remove their escape routes before you commit to a combination."},
+      ]},
+      { day:"Tue", type:"Strength", badge:"strength", title:"Explosive Power II", duration:"55 min", drills:[
+        {name:"Trap Bar Deadlift", reps:"5 × 5", detail:"Heavy, explosive off the floor. Total-body power base for every strike."},
+        {name:"Depth Jump to Box Jump", reps:"4 × 5", detail:"Step off a low box, land, immediately explode upward onto a second box. Reactive power for explosive entries and exits."},
+        {name:"Rotational Cable Chop", reps:"4 × 10 each side", detail:"High-to-low diagonal pull. Mimics the downward elbow and turning power of a hook."},
+        {name:"Weighted Step-up", reps:"4 × 8 each side", detail:"Drive through the front heel explosively. Direct transfer to knee strikes and kicking power."},
+      ]},
+      { day:"Wed", type:"Conditioning", badge:"conditioning", title:"Extended Rounds", duration:"60 min", drills:[
+        {name:"6-Round Heavy Bag (Extended)", reps:"6 × 6 min (90 sec rest)", detail:"Longer than fight rounds to build a buffer. Maintain output quality through the final 2 minutes of each round — that's the part that matters."},
+        {name:"Clinch-Heavy Rounds", reps:"3 × 3 min", detail:"Spend the majority of each round in simulated clinch exchanges — knees, elbows, control. The clinch is the most physically taxing range; train it specifically."},
+        {name:"Breathing Recovery Check", reps:"After final round", detail:"Time how long it takes your breathing to return to normal. Track this number weekly — it should trend down."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Advanced Clinch Variations", duration:"65 min", drills:[
+        {name:"Underhook Control Entry", reps:"4 × 2 min shadow", detail:"A different clinch entry than the double collar-tie — secure an underhook on one side, control their hip or far shoulder, and work knees from this position."},
+        {name:"Frame & Push Exit", reps:"4 × 90 sec", detail:"From any clinch position, build a forearm frame against their chest or shoulder and push to create separation cleanly — without giving up position before you're ready."},
+        {name:"Knee-to-Elbow Transition", reps:"4 × 2 min shadow", detail:"Throw a straight or diagonal knee, then as they react and close distance again, transition immediately into a horizontal elbow. Knee and elbow ranges overlap — flow between them."},
+        {name:"Dirty Boxing Inside", reps:"4 × 90 sec", detail:"Short, compact punches at clinch range mixed with knees — no winding up, everything stays tight to the body."},
+      ]},
+      { day:"Fri", type:"Sparring Prep", badge:"sparring", title:"Feinting & Setups", duration:"55 min", drills:[
+        {name:"Feint-to-Real Combo", reps:"5 × 3 min shadow", detail:"Throw a fake jab (no extension) to draw a reaction, then fire your actual combination based on how they responded."},
+        {name:"Level-Change Feints", reps:"4 × 2 min", detail:"Dip as if going for the body, then strike high — or the reverse. Selling the feint with your weight, not just your hands, is what makes it work."},
+        {name:"Broken Rhythm Drill", reps:"4 × 3 min shadow", detail:"Throw combinations with deliberately uneven timing — pause mid-combo, then explode. Disrupts an opponent's read on your rhythm."},
+      ]},
+      { day:"Sat", type:"Conditioning", badge:"conditioning", title:"Gas Tank II", duration:"60 min", drills:[
+        {name:"10-Round Shadow Marathon", reps:"10 × 3 min", detail:"Beyond fight length. Builds the conditioning ceiling that makes 5 rounds feel manageable."},
+        {name:"Knee/Elbow Stamina Circuit", reps:"6 × 90 sec", detail:"Continuous clinch knees alternated with shadow elbows, minimal rest. Builds the specific stamina for close-range exchanges."},
+        {name:"Hill or Stair Sprints", reps:"8 × 30 sec", detail:"3 min rest between. The uphill demand mirrors the leg burn of late-round kicking output."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Recovery", duration:"—", drills:[
+        {name:"Full Rest or Light Yoga", reps:"—", detail:"Two weeks of pressure and clinch work is taxing on the CNS. Prioritise sleep and full rest today."},
+      ]},
+    ]
+    ],
+    tips:[
+      {icon:"📐", title:"Work the Angles", body:"Straight-line fighters are predictable. Every combination should exit at an angle."},
+      {icon:"💡", title:"Watch Film", body:"Study Saenchai, Dieselnoi, Buakaw. Pick one fighter per month. Drill one signature technique."},
+      {icon:"📓", title:"Training Log", body:"Track what you drilled, how it felt, what to fix. One line per session."},
+      {icon:"🧊", title:"Cold Exposure", body:"A cold shower after hard sessions accelerates recovery. 2–3 min of cold water on legs and shoulders."},
+    ]
+  },
+  competitor: {
+    label: "Competitor", tagline: "Every rep has a purpose. Every session matters.",
+    focus: "Fight camp · Gameplan · Peak conditioning · Weight", programLength: 8,
+    weeks: [
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Gameplan Drilling", duration:"75 min", drills:[
+        {name:"Opponent Analysis Shadow", reps:"5 × 3 min", detail:"Visualise your next opponent's specific tendencies. Drill your counters to their most common attacks."},
+        {name:"A-Game Combinations (Max 3)", reps:"8 × 3 min bag", detail:"Your fight will be won on your 2–3 best combinations. Drill them until completely autonomous."},
+        {name:"Pressure Drill", reps:"4 × 3 min", detail:"Walk the bag forward, never back off, cut off angles. Builds the commitment to forward pressure."},
+        {name:"Dirty Boxing — Clinch Strikes", reps:"4 × 90 sec", detail:"Short punches, elbows, and knees at close range. This wins judges and tires opponents."},
+      ]},
+      { day:"Tue", type:"Strength", badge:"strength", title:"Fight Camp Strength", duration:"60 min", drills:[
+        {name:"Power Clean or KB Swing", reps:"5 × 5", detail:"The most fight-specific power exercise. Total body explosion — every Muay Thai strike starts from the floor."},
+        {name:"Weighted Pull-ups", reps:"4 × 5", detail:"Add weight via belt or vest. Clinch strength, posture, and pulling power behind a neck-tie."},
+        {name:"Rear Foot Elevated Split Squat", reps:"4 × 6 heavy each side", detail:"The single best lower body exercise for a fighter."},
+        {name:"Landmine Press", reps:"3 × 8 each side", detail:"Rotational pressing motion directly transfers to cross and hook power."},
+        {name:"Neck Work", reps:"3 × 15 each direction", detail:"Neck nods, side bends, rotation with light resistance. A strong neck absorbs shots."},
+      ]},
+      { day:"Wed", type:"Conditioning", badge:"conditioning", title:"Fight-Round Simulation", duration:"75 min", drills:[
+        {name:"10 × 3 min Rounds", reps:"10 rounds, 1 min rest", detail:"Your fight is 5 rounds. Going 10 means your gas tank is twice what you need."},
+        {name:"Pressure Rounds 6–10", reps:"Last 5 rounds", detail:"No backing up, must throw 3 kicks per round minimum, clinch every 30 sec."},
+        {name:"Breathing Control Drill", reps:"End of session", detail:"After the final round, control breathing back to normal in under 90 seconds."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Elbows, Knees & Fight-Range Mastery", duration:"75 min", drills:[
+        {name:"Catch-and-Counter Series", reps:"5 × 3 min shadow", detail:"Catch rear kick → dump & rear body kick; catch lead kick → step-in knee; parry jab → step-out cross. React, don't think."},
+        {name:"Horizontal Elbow – Sok Tad (Power)", reps:"5 × 20 each side on bag", detail:"Full commitment on each rep: step in, pivot foot, drive elbow across at head height. Aim for a sharp sound on the bag. These must be automatic in a fight — 500 reps is the minimum."},
+        {name:"Uppercut Elbow – Sok Ngad", reps:"4 × 20 each side", detail:"Drive up under the chin from close range. The uppercut elbow lands when they drop their head or you catch them post-punch. Drill the angle until it fires without thought."},
+        {name:"Downward Elbow – Sok Tong", reps:"4 × 20 each side", detail:"Elbow spears straight down — used when the opponent ducks into your chest. Raise the elbow high, then drive the point down onto the back of their skull or neck. Practice on a pad or pillow."},
+        {name:"Diagonal Elbow – Sok Chieng", reps:"4 × 15 each side", detail:"Sweep from high-outside to low-inside across the cheekbone. The diagonal trajectory beats a horizontal guard. Add this into your jab-cross exit: after the cross, step in with Sok Chieng."},
+        {name:"Spinning Elbow – Sok Klap", reps:"3 × 10 each side", detail:"Pivot on the lead foot, spin 180°, drive the rear elbow back across. Use only when you have full control of range — a missed spinning elbow is a gift to your opponent. Drill the spin-and-reset separately first."},
+        {name:"Straight Knee + Diagonal Knee Pairs – Khao Trong / Chiang", reps:"5 × 20 pairs each leg", detail:"In clinch or on bag: straight knee to body, immediately diagonal knee to far ribs. Two-beat rhythm, same collar-tie grip. This should be as natural as a jab-cross — it's your clinch jab-cross."},
+        {name:"Curve Knee + Long Knee Combination – Khao Khong / Yao", reps:"4 × 15 each leg", detail:"Curve knee arcs inward to the hip/thigh, long knee thrusts forward into the solar plexus. Combine them: curve to draw their reaction, long knee to break their posture as they readjust."},
+        {name:"Flying Knee – Khao Loi", reps:"3 × 8 each leg", detail:"Short skip-step, launch off the lead foot, drive the rear knee up and forward toward the chin or solar plexus. Land in stance. Drill the entry and the landing separately before combining. High-risk — only use when the gap is obvious."},
+        {name:"Five-Weapon Inside-Fighting Flow", reps:"5 × 3 min shadow", detail:"Enter with 1–2, horizontal elbow, slide to clinch, straight + diagonal knee, neck-switch diagonal knee other side, exit with spinning elbow. This is your complete close-range arsenal. Every rep must be fight-speed with full intent."},
+      ]},
+      { day:"Fri", type:"Sparring Prep", badge:"sparring", title:"Pre-Sparring Activation", duration:"60 min", drills:[
+        {name:"High-Intensity Shadow — Full Gameplan", reps:"5 × 5 min", detail:"Execute your full fight gameplan at 95% in shadow. This is your final mental rehearsal."},
+        {name:"Southpaw & Orthodox Switch Drills", reps:"3 × 3 min each", detail:"Understanding both stances makes you dangerous to both types of opponent."},
+        {name:"Late-Round Conditioning", reps:"3 × 5 min (minimal rest)", detail:"Simulate being gassed in round 3–5. Can you still execute your gameplan?"},
+        {name:"Visualisation", reps:"10 min", detail:"Eyes closed, full round visualisation. Win the fight in your mind first."},
+      ]},
+      { day:"Sat", type:"Conditioning", badge:"conditioning", title:"Peak Week Cardio", duration:"70 min", drills:[
+        {name:"Long Run or Bike", reps:"30 min Zone 2", detail:"60–70% max HR. Builds aerobic base, accelerates recovery, clears your head."},
+        {name:"Hill Sprints or Stairs", reps:"8 × 30 sec all-out", detail:"3 min rest between. Nothing builds fight-pace conditioning like uphill sprints."},
+        {name:"Cool-down Clinch Work", reps:"3 × 3 min", detail:"Light clinch drill — knees and exits. Keep technical sharpness even on cardio days."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Mandatory Recovery", duration:"—", drills:[
+        {name:"Full Rest — Non-Negotiable", reps:"—", detail:"Competitors skip rest days and get injured. Your CNS needs 24 hours of genuine rest every week."},
+        {name:"Opponent Film Study (Optional)", reps:"30 min", detail:"If you have film on your opponent — watch it here. Note habits, patterns, and weaknesses."},
+      ]},
+    ],
+    [
+      { day:"Mon", type:"Technique", badge:"technique", title:"Gameplan Refinement", duration:"75 min", drills:[
+        {name:"A-Game Combination Stress Test", reps:"6 × 3 min bag", detail:"Throw your 2–3 best combinations at full speed while fatigued from earlier rounds. Under fatigue is how they'll actually come out in a fight."},
+        {name:"Plan B Combinations", reps:"5 × 3 min", detail:"Drill your secondary gameplan — what you switch to if your A-game gets read or countered. Every fighter needs a plan B drilled, not improvised."},
+        {name:"Forward Pressure Refinement", reps:"4 × 3 min", detail:"Tighten the footwork from your pressure game — smaller steps, better cut-off angles, zero wasted motion."},
+        {name:"Dirty Boxing Sharpening", reps:"4 × 90 sec", detail:"Short elbows and knees at clinch range. This phase is about sharpening what already works, not learning anything new."},
+      ]},
+      { day:"Tue", type:"Strength", badge:"strength", title:"Taper Strength", duration:"45 min", drills:[
+        {name:"Power Clean or KB Swing (Lighter)", reps:"4 × 5", detail:"Reduce load from fight-camp peak. Maintain explosiveness without accumulating fatigue this close to competing."},
+        {name:"Bodyweight Explosive Circuit", reps:"3 rounds", detail:"Jump squats, plyo push-ups, broad jumps — explosive but low-volume. Keep the nervous system sharp, not drained."},
+        {name:"Mobility & Activation", reps:"15 min", detail:"Hip openers, shoulder activation, light banded work. The strength work this week is maintenance, not building."},
+      ]},
+      { day:"Wed", type:"Conditioning", badge:"conditioning", title:"Sharpening Rounds", duration:"60 min", drills:[
+        {name:"5 × 3 min Fight-Pace Rounds", reps:"5 rounds, 1 min rest", detail:"Exact fight pacing now — no more, no less. This phase matches your output to what you'll actually need on fight night."},
+        {name:"Sharp Combination Bursts", reps:"Throughout rounds", detail:"Every round include 2–3 explosive bursts of your A-game combinations at full speed, then return to controlled pace."},
+        {name:"Breathing Control Drill", reps:"End of session", detail:"Recover breathing to normal in under 75 seconds. Track your time — it should be your fastest of camp."},
+      ]},
+      { day:"Thu", type:"Technique", badge:"technique", title:"Finishing Combinations", duration:"70 min", drills:[
+        {name:"Finishing Sequence Drill", reps:"6 × 3 min bag", detail:"Drill the specific combination you intend to use to close out rounds or finish a hurt opponent. Confidence in a finisher changes how you fight the whole bout."},
+        {name:"Elbow-Knee Finisher Chain", reps:"4 × 90 sec", detail:"Horizontal elbow into clinch, double knee, exit. Your highest-percentage close-range finishing sequence, drilled to full automaticity."},
+        {name:"Counter-Finish off a Catch", reps:"4 × 2 min shadow", detail:"Catch a kick, dump them off-balance, finish with your best combination while they're recovering footing."},
+        {name:"Composure Under Pressure", reps:"3 × 3 min", detail:"Have a training partner (or imagine heavy pressure) crowd you — practice staying technical and not panicking, then find your finishing opening."},
+      ]},
+      { day:"Fri", type:"Sparring Prep", badge:"sparring", title:"Final Mental Rehearsal", duration:"50 min", drills:[
+        {name:"Full Gameplan Shadow (Lighter)", reps:"3 × 5 min", detail:"Run through your complete gameplan at controlled intensity. This close to competing, technique and clarity matter more than output."},
+        {name:"Visualisation — Full Fight", reps:"15 min", detail:"Eyes closed, walk through the full fight from walkout to final bell. See yourself executing your gameplan successfully."},
+        {name:"Confidence Affirmation Round", reps:"3 min shadow", detail:"Light, loose shadow boxing while reminding yourself of the work you've put in. The mental side of fight week matters as much as the physical."},
+      ]},
+      { day:"Sat", type:"Conditioning", badge:"conditioning", title:"Light Peak Maintenance", duration:"40 min", drills:[
+        {name:"Easy Movement Session", reps:"20 min", detail:"Light jog or bike, well below max effort. Keep blood flowing without adding fatigue this close to fight time."},
+        {name:"Technical Shadow — No Power", reps:"3 × 2 min", detail:"Run your combinations at 50% speed and power. Pure technical rehearsal — save the explosiveness for fight night."},
+        {name:"Light Stretch & Mobility", reps:"15 min", detail:"Gentle full-body stretching. Nothing strenuous this close to competing."},
+      ]},
+      { day:"Sun", type:"Rest", badge:"rest", title:"Mandatory Recovery", duration:"—", drills:[
+        {name:"Full Rest — Non-Negotiable", reps:"—", detail:"Whether this is fight week or a camp cycle repeating, full rest today is what allows the sharpening work to actually show up in performance."},
+      ]},
+    ]
+    ],
+    tips:[
+      {icon:"🎯", title:"Drill Your Gameplan", body:"Your fight is won in the gym. If you haven't drilled it 500 times, it won't fire under pressure."},
+      {icon:"😴", title:"Sleep is Training", body:"HGH is released in deep sleep. Less than 7 hours = compromised power and slower reflexes."},
+      {icon:"⚖️", title:"Weight Management", body:"Large cuts drain strength. Stay within 3–4kg of fight weight in camp."},
+      {icon:"🧘", title:"Mental Rehearsal", body:"10 minutes of fight visualisation daily is standard in elite combat sports."},
+    ]
+  }
+};
+
+// ═══════════════════════════════════════════════════
+//  COMBOS DATA
+// Key: 1=Jab 2=Cross 3=Lead Hook 4=Rear Hook
+//      5=Lead Uppercut 6=Rear Uppercut
+//      T=Teep  LK=Low Kick  BK=Body Kick  HK=Head Kick
+//      EH=Horizontal Elbow  EU=Uppercut Elbow  ED=Downward Elbow
+//      EX=Diagonal Elbow    ES=Spinning Elbow
+//      KS=Straight Knee  KD=Diagonal Knee  KC=Curve Knee
+//      KL=Long Knee  KF=Flying Knee
+// ═══════════════════════════════════════════════════
+const COMBOS = {
+  beginner: [
+    // PUNCH
+    { id:"b1", cat:"punch", notation:"1 – 2", name:"Jab-Cross", cue:"The foundation of everything. Pivot your back foot on the cross, return guard immediately after." },
+    { id:"b2", cat:"punch", notation:"1 – 1 – 2", name:"Double Jab–Cross", cue:"Two quick jabs to find range and disrupt rhythm, then the cross lands on the reaction." },
+    { id:"b3", cat:"punch", notation:"1 – 2 – 3", name:"Jab-Cross-Lead Hook", cue:"Throw the hook tight — elbow up, pivot your lead foot as you swing. Don't loop it wide." },
+    // KICK
+    { id:"b4", cat:"kick", notation:"T – T", name:"Double Teep", cue:"Use the first teep to measure range. The second lands with more purpose. Snap back fast each time." },
+    { id:"b5", cat:"kick", notation:"2 – LK", name:"Cross–Low Kick", cue:"Cross draws their guard up. Low kick follows before they reset. Pivot the standing foot fully." },
+    { id:"b6", cat:"kick", notation:"LK – LK", name:"Double Low Kick", cue:"Same target, two hits. First breaks their stance; second lands on the weakened leg. Stay in guard." },
+    // KNEE
+    { id:"b10", cat:"knee", notation:"clinch – KS", name:"Clinch Straight Knee", cue:"Double collar-tie, pull their head down, drive your knee straight up into the body. Hip thrusts forward on impact." },
+    { id:"b11", cat:"knee", notation:"clinch – KS – KS", name:"Double Straight Knee", cue:"Pull-pull rhythm: pull their neck down twice, knee twice. Stay heavy on their head between knees." },
+    { id:"b12", cat:"knee", notation:"clinch – KD", name:"Clinch Diagonal Knee", cue:"Instead of driving straight up, angle the knee across their body — targets the floating ribs on the opposite side." },
+    // ELBOW
+    { id:"be1", cat:"elbow", notation:"1 – EH", name:"Jab–Horizontal Elbow (Sok Tad)", cue:"Jab extends their guard outward, you step in tight, horizontal elbow cuts across at head height on the return. Keep your forearm parallel to the floor." },
+    { id:"be2", cat:"elbow", notation:"2 – EU", name:"Cross–Uppercut Elbow (Sok Ngad)", cue:"Cross turns their chin. As you recover, drive the lead elbow upward under their guard — picture lifting their chin from underneath. Close range only." },
+    { id:"be3", cat:"elbow", notation:"1 – 2 – EH", name:"Jab-Cross–Horizontal Elbow", cue:"Two punches bring you close, horizontal elbow lands as the third strike. The cross sets the distance perfectly for elbow range." },
+    // MIXED
+    { id:"b7", cat:"mixed", notation:"1 – 2 – LK", name:"Jab-Cross-Low Kick", cue:"Classic 3-hit combo. The low kick is the payoff after their attention goes to the hands." },
+    { id:"b8", cat:"mixed", notation:"T – 2", name:"Teep–Cross", cue:"Teep creates space and resets their balance. Step in immediately and fire the cross." },
+    { id:"b9", cat:"mixed", notation:"1 – T", name:"Jab–Teep", cue:"Jab pokes their guard open. Teep pushes them away while they're reacting. Great for range control." },
+    { id:"b13", cat:"mixed", notation:"1 – 2 – clinch – KS", name:"Jab-Cross-Clinch Knee", cue:"Punches to create contact range, slide into clinch on the cross, straight knee before they can respond." },
+  ],
+  intermediate: [
+    // PUNCH
+    { id:"i1", cat:"punch", notation:"1 – 2 – 3 – 2", name:"Jab-Cross-Hook-Cross", cue:"The classic boxing 4-piece. Keep the second cross tight and fast — you're throwing from a turned position." },
+    { id:"i2", cat:"punch", notation:"1 – 2 – 5 – 2", name:"Jab-Cross-Uppercut-Cross", cue:"Lead uppercut digs under their guard after the cross gets them thinking high. Rear cross finishes." },
+    { id:"i3", cat:"punch", notation:"1 – 2 – 3 – body", name:"Jab-Cross-Hook-Body Hook", cue:"High-high-high-LOW. The body hook should be a different angle — bend your knees as you throw it." },
+    { id:"i4", cat:"punch", notation:"slip – 2 – 3", name:"Slip-Cross-Lead Hook (Counter)", cue:"Slip outside an incoming jab, fire your cross through the gap, then hook on the follow. All one fluid motion." },
+    // KICK
+    { id:"i5", cat:"kick", notation:"LK – 2 – LK", name:"Low Kick–Cross–Low Kick", cue:"First kick checks their stance. The cross keeps their attention up. Second kick finishes the pattern." },
+    { id:"i6", cat:"kick", notation:"BK – HK", name:"Body Kick–Head Kick", cue:"Body kick forces their guard to drop or their elbow to tuck. Head kick follows immediately with same motion." },
+    { id:"i7", cat:"kick", notation:"T – BK", name:"Teep–Body Kick", cue:"Teep extends then resets their weight. Body kick as they step back in — their weight is shifting." },
+    { id:"i8", cat:"kick", notation:"switch – BK", name:"Switch–Body Kick", cue:"The switch disguises your lead leg as the kicking leg. Keep the switch small and fast." },
+    // MIXED
+    { id:"i9", cat:"mixed", notation:"1 – 2 – BK", name:"Jab-Cross-Body Kick", cue:"Punches set up the kick. After the cross your hips are already rotating — extend into the kick." },
+    { id:"i10", cat:"mixed", notation:"1 – 2 – 3 – LK", name:"Jab-Cross-Hook-Low Kick", cue:"Three strikes to the head then cut low. Low kick should land before they expect it." },
+    { id:"i11", cat:"mixed", notation:"T – 2 – BK", name:"Teep-Cross-Body Kick", cue:"Teep creates distance, cross closes it, body kick as they're being pushed back. Don't stop moving." },
+    { id:"i12", cat:"mixed", notation:"1 – 2 – K", name:"Jab-Cross-Knee (Clinch)", cue:"Punches initiate contact, slide into clinch on the cross, and knee before they can clinch back." },
+    // ELBOW
+    { id:"ie1", cat:"elbow", notation:"2 – EH", name:"Cross–Horizontal Elbow", cue:"Cross turns their head, lead horizontal elbow cuts across on the return. Elbow range is very short — you must be inside their guard." },
+    { id:"ie2", cat:"elbow", notation:"1 – EU", name:"Jab–Uppercut Elbow (Sok Ngad)", cue:"Jab occupies their guard, drive the lead elbow upward under their chin. Great for inside fighting when punching range is too cramped." },
+    { id:"ie3", cat:"elbow", notation:"2 – EH – EU", name:"Cross–Horizontal–Uppercut Elbow", cue:"Cross to bring them close, horizontal elbow across the temple, uppercut elbow under the chin. Two elbows, two targets, one entry." },
+    { id:"ie4", cat:"elbow", notation:"1 – 2 – ED", name:"Jab-Cross–Downward Elbow (Sok Tong)", cue:"Punches break their guard open. Downward elbow drives from high to low — spearing straight down onto the bridge of the nose or top of the skull as they duck." },
+    { id:"ie5", cat:"elbow", notation:"1 – 2 – EX", name:"Jab-Cross–Diagonal Elbow (Sok Chieng)", cue:"Diagonal elbow sweeps from high-outside to low-inside — or vice versa. Cuts across the cheekbone at an angle. Harder to block than the horizontal because of the unexpected trajectory." },
+    { id:"i13", cat:"mixed", notation:"2 – EH", name:"Cross–Horizontal Elbow", cue:"Cross turns their head, lead elbow cuts horizontally on the return. Stay close — elbow range is short." },
+    // KNEE
+    { id:"i14", cat:"knee", notation:"clinch – KS – KD", name:"Straight + Diagonal Knee", cue:"Straight knee to the body, shift grip slightly, diagonal knee angles to the ribs on the other side. Two targets, one clinch." },
+    { id:"i15", cat:"knee", notation:"clinch – KD – KD – KS", name:"Diagonal-Diagonal-Straight", cue:"Two diagonal knees carve the ribs, straight knee finishes up the middle. Classic Muay Thai knee rhythm." },
+    { id:"i16", cat:"knee", notation:"clinch – KS – KS – KS", name:"Triple Straight Knee", cue:"Three knees in one grip: pull down, knee, pull down, knee, pull down, knee. Exhale sharply on each." },
+    { id:"i17", cat:"knee", notation:"clinch – KC", name:"Curve Knee (Khao Khong)", cue:"In the clinch, arc your knee in a curved path across their thigh or hip. Grip stays central — the knee swings outward then curves in." },
+    { id:"i18", cat:"knee", notation:"1 – 2 – clinch – KS – exit T", name:"Jab-Cross-Clinch-Knee-Teep Exit", cue:"Full close-range sequence. Enter with punches, knee from clinch, teep them away on the exit to score and reset range." },
+    { id:"i19", cat:"knee", notation:"clinch – KL", name:"Long Knee (Khao Yao)", cue:"From loose clinch — extend the knee out in a long, thrusting push rather than a snap. Hits the stomach/solar plexus and breaks their posture." },
+  ],
+  advanced: [
+    // PUNCH
+    { id:"a1", cat:"punch", notation:"1 – 2 – 3 – 4", name:"Jab-Cross-Lead Hook-Rear Hook", cue:"Full 4-punch combination. The rear hook is the surprise — most fighters don't expect a hook after a hook." },
+    { id:"a2", cat:"punch", notation:"1 – 6 – 2 – 3", name:"Jab-Rear Uppercut-Cross-Hook", cue:"The rear uppercut travels under their guard after the jab. Cross-hook closes the combination at head height." },
+    { id:"a3", cat:"punch", notation:"parry – 2 – 3 – body", name:"Parry–Cross–Hook–Body Hook", cue:"Parry their jab outward with your lead hand, fire cross through the opening, hook head, hook body." },
+    { id:"a4", cat:"punch", notation:"slip – 2 – 3 – 2", name:"Slip–Cross–Hook–Cross (Counter)", cue:"Slip their jab to the outside, counter cross, follow with hook, finish with rear cross. All from one slip." },
+    // KICK
+    { id:"a5", cat:"kick", notation:"fake HK – LK", name:"Fake High–Low Kick", cue:"Chamber as if kicking to the head. They raise their guard. Redirect the same hip rotation to the thigh." },
+    { id:"a6", cat:"kick", notation:"LK – switch – BK", name:"Low Kick–Switch–Body Kick", cue:"Low kick shifts their weight to their lead leg. Switch kicks them while they're readjusting. Body kick follows." },
+    { id:"a7", cat:"kick", notation:"BK – HK", name:"Body–Head Kick (Same Leg)", cue:"Both kicks use the same rear leg. Body kick drops their guard/elbow. Head kick on the same rotation, higher." },
+    { id:"a8", cat:"kick", notation:"catch – push – BK", name:"Catch Kick–Push–Counter Kick", cue:"Catch their kick by scooping at the ankle, push them back to break stance, fire your rear body kick." },
+    // MIXED
+    { id:"a9", cat:"mixed", notation:"1 – 2 – 3 – BK", name:"Jab-Cross-Hook-Body Kick", cue:"Three punches take their attention. The body kick is the real money shot — full hip extension on impact." },
+    { id:"a10", cat:"mixed", notation:"T – 2 – 3 – switch BK", name:"Teep–Cross–Hook–Switch Body Kick", cue:"Long combo. Each strike keeps their guard occupied. The switch kick is the disguised finisher." },
+    { id:"a11", cat:"mixed", notation:"1 – 2 – E – K", name:"Jab-Cross-Elbow-Knee (Clinch)", cue:"Punches open range entry, elbow cuts on contact, slide to clinch, knee before they can settle." },
+    { id:"a12", cat:"mixed", notation:"catch – 2 – 3 – LK", name:"Catch Kick–Cross–Hook–Low Kick", cue:"Catch their kick, push to off-balance, cross-hook while they're resetting, punish the lead leg with a low kick." },
+    // ELBOW
+    { id:"ae1", cat:"elbow", notation:"1 – 2 – EH – EU", name:"Cross–Horizontal–Uppercut Elbow Flow", cue:"Punches create the entry, horizontal elbow cuts across the temple, uppercut elbow digs under the chin. Two different angles in one burst — very hard to cover both." },
+    { id:"ae2", cat:"elbow", notation:"slip – EH – EU", name:"Slip–Horizontal–Uppercut Elbow", cue:"Slip outside their jab, horizontal elbow across the temple as you come up, uppercut elbow follows immediately. Counter off the slip — all three happen before they can reset." },
+    { id:"ae3", cat:"elbow", notation:"2 – EX – ED", name:"Cross–Diagonal–Downward Elbow", cue:"Cross brings you close, diagonal elbow slashes across the cheekbone, downward elbow spears straight down. Three different trajectories — high, diagonal, vertical — covering all defence angles." },
+    { id:"ae4", cat:"elbow", notation:"1 – 2 – ES", name:"Jab-Cross–Spinning Elbow (Sok Klap)", cue:"Two punches create the opening. Pivot on your lead foot, spin 180°, and drive the rear elbow back across their head. Use only when the gap is large — spinning leaves you exposed briefly." },
+    { id:"ae5", cat:"elbow", notation:"EH – 2 – EH", name:"Elbow–Cross–Elbow", cue:"Lead horizontal elbow opens, cross extends range briefly, lead elbow comes back on the return. Stay in tight the whole time — the cross is short, not extended." },
+    { id:"ae6", cat:"elbow", notation:"EH – EU – ED", name:"Triple Elbow Combination", cue:"Horizontal, uppercut, downward — three trajectories, three targets. This is the full elbow arsenal on one entry. Drill each transition slowly before adding speed." },
+    { id:"a13", cat:"mixed", notation:"1 – 2 – 3 – 2 – LK", name:"Five-Piece Combination", cue:"Extended combination to test cardio and autonomy. The 5th strike (low kick) should still have full power — if it doesn't, drill conditioning more." },
+    // KNEE
+    { id:"a14", cat:"knee", notation:"clinch – KD – KC – KS", name:"Diagonal–Curve–Straight", cue:"The classic three-knee combination: diagonal carves the ribs, curve hooks across the hip/thigh, straight knee up the middle. Keep the collar-tie tight throughout." },
+    { id:"a15", cat:"knee", notation:"clinch – neck switch – KD – KD", name:"Neck Switch Diagonal Knees", cue:"Switch your collar-tie grip to the opposite side, then throw two diagonal knees from the new angle. Forces them to defend opposite flanks." },
+    { id:"a16", cat:"knee", notation:"clinch – KL – KL – KS", name:"Long-Long-Straight", cue:"Two long knees break their posture forward, then the straight knee snaps up as they're off-balance. Very hard to defend." },
+    { id:"a17", cat:"knee", notation:"clinch – off-balance – KS – KD – dump", name:"Off-Balance Knee Series + Dump", cue:"Pull their head to one side to load their weight, knee to body, switch to diagonal knee other side, then shove them away. Controls the clinch completely." },
+    { id:"a18", cat:"knee", notation:"1 – 2 – E – clinch – KD – KC – exit BK", name:"Full-Range Knee Series", cue:"Enter with punches, lead elbow on contact, clinch with diagonal and curve knees, exit with a body kick as you separate. Punishes every range." },
+    { id:"a19", cat:"knee", notation:"step in – KF (flying)", name:"Flying Knee Entry (Khao Loi)", cue:"Take a short step-in or skip-step, launch off the lead foot, and drive the rear knee forward and upward. Aim for the chin or solar plexus. Land in stance." },
+  ],
+  competitor: [
+    // PUNCH
+    { id:"c1", cat:"punch", notation:"1 – 2 – 3 – 4 – 2", name:"Five-Punch Combination", cue:"End on the cross because it's the most powerful finisher. Footwork must move you to an angle after the last strike." },
+    { id:"c2", cat:"punch", notation:"parry – 5 – 2 – 3", name:"Parry–Lead Uppercut–Cross–Hook", cue:"Parry incoming jab inward, lead uppercut under their guard, cross and hook at head height. Compact and explosive." },
+    { id:"c3", cat:"punch", notation:"slip out – 2 – body 3 – 2", name:"Outside Slip–Cross–Body Hook–Cross", cue:"Slip to the outside of their jab. Cross to head, body hook drops them, rear cross finishes. Ring IQ combo." },
+    { id:"c4", cat:"punch", notation:"bob – 4 – 2 – 3", name:"Bob Under–Rear Hook–Cross–Hook", cue:"Bob under their hook, rear hook to ribs or head (your choice), cross, hook. Works inside range." },
+    // KICK
+    { id:"c5", cat:"kick", notation:"LK – LK – HK", name:"Low-Low-High Kick", cue:"Two low kicks force them to check. Third strike goes high on the recheck reflex. Fire HK with same chamber." },
+    { id:"c6", cat:"kick", notation:"fake T – BK", name:"Fake Teep–Body Kick", cue:"Chamber the teep but redirect to a body kick. The teep chamber freezes them — same initial hip movement." },
+    { id:"c7", cat:"kick", notation:"catch – dump – BK", name:"Catch–Dump–Counter Kick", cue:"Catch their rear kick at the ankle, step to the outside and dump, rear body kick before they recover." },
+    { id:"c8", cat:"kick", notation:"LK – switch HK", name:"Low Kick–Switch Head Kick", cue:"Low kick transfers their weight to lead leg. Switch means your rear leg (the power leg) fires the head kick." },
+    // MIXED
+    { id:"c9", cat:"mixed", notation:"1 – 2 – 3 – BK – clinch – K", name:"Punch–Kick–Clinch–Knee", cue:"Punches to break guard, body kick to enter range, slide to clinch, knee before they secure position. This wins fights." },
+    { id:"c10", cat:"mixed", notation:"T – 1 – 2 – E – K", name:"Teep–Jab–Cross–Elbow–Knee", cue:"All 5 weapons in one combo. Teep to find range, jab-cross to bring them in, elbow on contact, clinch knee." },
+    { id:"c11", cat:"mixed", notation:"parry – 2 – LK – BK", name:"Parry–Cross–Low Kick–Body Kick", cue:"After the parry and cross, their balance is shifted. Low kick disrupts stance, body kick while they're off-balance." },
+    { id:"c12", cat:"mixed", notation:"catch kick – 2 – 3 – LK", name:"Catch–Punish–Low Kick", cue:"Catch and push, enter range with cross-hook, punish lead leg before they re-square. Efficient and fight-ending pattern." },
+    // ELBOW
+    { id:"ce1", cat:"elbow", notation:"2 – EH – EU – ED", name:"Cross + Full Elbow Suite", cue:"Cross drives the entry, then all three primary elbows in sequence: horizontal cuts the temple, uppercut lifts the chin, downward spears the skull as they try to duck. Fight-ending combination at close range." },
+    { id:"ce2", cat:"elbow", notation:"slip – EX – EU – EH", name:"Slip + Diagonal–Uppercut–Horizontal", cue:"Slip their jab, diagonal elbow on the way up, uppercut elbow follows, horizontal elbow as the finisher. Three elbows off one defensive movement — elite-level inside fighting." },
+    { id:"ce3", cat:"elbow", notation:"1 – 2 – ES – EH", name:"Jab-Cross–Spinning–Horizontal", cue:"Punches set the range, spinning elbow surprises, reset and drive horizontal elbow as they're reacting to the spin. The spin forces a defensive response that opens the horizontal." },
+    { id:"ce4", cat:"elbow", notation:"clinch break – EH – ED", name:"Clinch Break + Double Elbow", cue:"As the referee breaks the clinch, step in immediately with horizontal elbow, then downward elbow before they can reset their guard. The break is a scoring opportunity — exploit it." },
+    { id:"ce5", cat:"elbow", notation:"parry – EH – EU – 2", name:"Parry–Horizontal–Uppercut Elbow–Cross", cue:"Parry their jab, horizontal elbow at temple, uppercut elbow under chin, extend with a cross to finish at longer range. Transitions from elbow range back to punching range — shows full range mastery." },
+    { id:"ce6", cat:"elbow", notation:"EH – EU – ED – EX – ES", name:"Five-Elbow Mastery Drill", cue:"All five elbow types in sequence: horizontal, uppercut, downward, diagonal, spinning. This is a drill for autonomy only — in a fight you use the right elbow for the right moment. Know them all cold." },
+    { id:"c13", cat:"mixed", notation:"bob – 4 – BK – clinch – KD – KC – E2", name:"Full-Range Flow", cue:"The most complex combo in the library. Bob, hook, kick, clinch, diagonal and curve knees, exit with rear elbow. Drill each section separately first." },
+    // KNEE
+    { id:"c14", cat:"knee", notation:"clinch – KS – KD – KC – KS", name:"Four-Knee Domination Sequence", cue:"Straight to body, diagonal across ribs, curve across hip, straight up the middle. This is the full Muay Thai knee arsenal in one grip. Control the head throughout." },
+    { id:"c15", cat:"knee", notation:"clinch – neck switch – KD – switch – KD – KS", name:"Double Neck Switch Knees", cue:"Switch grips twice for double diagonal knees from opposing angles, then finish with a straight up the middle. Used by top-level Thai clinch fighters to score from both sides." },
+    { id:"c16", cat:"knee", notation:"clinch – KL – KL – off-balance – KD – KC", name:"Long Knee Postural Break + Follow", cue:"Two long knees break their forward posture, use the reaction to off-balance sideways, then punish with diagonal and curve knees while they're leaning." },
+    { id:"c17", cat:"knee", notation:"feint T – step in – KF (flying)", name:"Teep Feint Flying Knee", cue:"Chamber a teep to freeze them, then launch off that same leg into a flying knee. The feint removes their defensive reaction. High risk, high reward — only when the gap is there." },
+    { id:"c18", cat:"knee", notation:"1 – 2 – slip – KF (flying)", name:"Slip-Entry Flying Knee", cue:"Slip their counter after your jab-cross, and use the momentum of the slip to launch the flying knee. The slip gives you the angle and the entry simultaneously." },
+    { id:"c19", cat:"knee", notation:"clinch – KD – KC – KL – KS – exit E2", name:"Five-Knee Clinch Dominance", cue:"The complete knee arsenal: diagonal, curve, long, straight, then rear elbow on the exit. This is a full clinch round in one sequence — only attempt after each individual technique is automatic." },
+  ]
+};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let currentLevel = localStorage.getItem('mt_level') || null;
+let currentDayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+let currentWeekIdx = 0;
+let currentTab = 'training';
+let drillActive = false;
+let drillTimer = null;
+let drillQueue = [];
+let drillIdx = 0;
+let drillInterval = 5;
+let drillCategory = 'all';
+let drillCountIdx = 0;
+let selectedComboIds = new Set();
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+function init() {
+  if (currentLevel && PROGRAMS[currentLevel]) {
+    loadWeekIdx();
+    showDashboard();
+  } else showOnboarding();
+}
+
+function showOnboarding() {
+  document.getElementById('main-nav').style.display = 'none';
+  setScreen('onboarding');
+}
+
+function selectLevel(level) {
+  currentLevel = level;
+  localStorage.setItem('mt_level', level);
+  loadWeekIdx();
+  showDashboard();
+}
+
+function getWeekStorageKey() { return 'mt_week_' + currentLevel; }
+
+function loadWeekIdx() {
+  const max = PROGRAMS[currentLevel].weeks.length - 1;
+  const saved = parseInt(localStorage.getItem(getWeekStorageKey()), 10);
+  currentWeekIdx = (!isNaN(saved) && saved >= 0 && saved <= max) ? saved : 0;
+}
+
+function changeWeek(delta) {
+  const max = PROGRAMS[currentLevel].weeks.length - 1;
+  currentWeekIdx = Math.min(max, Math.max(0, currentWeekIdx + delta));
+  localStorage.setItem(getWeekStorageKey(), currentWeekIdx);
+  renderDashboard();
+}
+
+function resetLevel() {
+  stopDrill();
+  currentLevel = null;
+  localStorage.removeItem('mt_level');
+  showOnboarding();
+}
+
+function showDashboard() {
+  const nav = document.getElementById('main-nav');
+  nav.style.display = 'flex';
+  document.getElementById('nav-tabs').style.display = 'flex';
+  document.getElementById('nav-level-badge').style.display = 'inline-flex';
+  document.getElementById('nav-level-badge').textContent = PROGRAMS[currentLevel].label + ' · Change';
+  showTab('training');
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().includes(tab)) t.classList.add('active');
+  });
+  if (tab === 'training') {
+    stopDrill();
+    setScreen('dashboard');
+    renderDashboard();
+  } else if (tab === 'combos') {
+    setScreen('combos');
+    renderCombos();
+  } else {
+    stopDrill();
+    setScreen('timer');
+    renderTimerScreen();
+  }
+}
+
+function setScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
+  const el = document.getElementById('screen-' + name);
+  el.classList.add('active');
+  el.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════
+//  TRAINING RENDER
+// ═══════════════════════════════════════════════════
+function renderDashboard() {
+  const prog = PROGRAMS[currentLevel];
+  const totalWeeks = prog.weeks.length;
+  const week = prog.weeks[currentWeekIdx];
+  let html = `
+    <div class="greeting">Train Like a <span>Champion</span></div>
+    <div class="greeting-sub">${prog.tagline} &nbsp;·&nbsp; ${prog.focus}</div>
+    ${totalWeeks > 1 ? `
+    <div class="week-nav">
+      <button class="btn btn-ghost" onclick="changeWeek(-1)" ${currentWeekIdx===0?'disabled':''}>‹ Prev</button>
+      <span class="week-nav-label">Week ${currentWeekIdx+1} of ${totalWeeks} &nbsp;·&nbsp; rotates each week</span>
+      <button class="btn btn-ghost" onclick="changeWeek(1)" ${currentWeekIdx===totalWeeks-1?'disabled':''}>Next ›</button>
+    </div>` : ''}
+    <div class="section-title">This Week's Schedule</div>
+    <div class="week-strip">
+      ${week.map((d, i) => `
+        <div class="day-pill ${i===currentDayIdx?'active':''} ${d.badge==='rest'?'rest':''}" onclick="selectDay(${i})">
+          <div class="dp-name">${d.day}</div>
+          <div class="dp-type">${d.type}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div id="session-area"></div>
+    <div class="section-title">Coaching Tips</div>
+    <div class="tips-grid">
+      ${prog.tips.map(t => `
+        <div class="tip-card">
+          <div class="tip-icon">${t.icon}</div>
+          <div class="tip-title">${t.title}</div>
+          <div class="tip-body">${t.body}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="section-title">Full Week Program</div>
+    <div class="session-card">
+      <table class="program-table">
+        <thead><tr><th>Day</th><th>Session</th><th>Duration</th><th>Focus</th></tr></thead>
+        <tbody>
+          ${week.map(d => `
+            <tr>
+              <td><strong>${d.day}</strong></td>
+              <td>${d.title}</td>
+              <td style="color:var(--muted)">${d.duration}</td>
+              <td><span class="sc-badge badge-${d.badge}">${d.type}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  document.getElementById('dash-inner').innerHTML = html;
+  renderSession(currentDayIdx);
+}
+
+function selectDay(idx) {
+  currentDayIdx = idx;
+  document.querySelectorAll('.day-pill').forEach((p, i) => p.classList.toggle('active', i===idx));
+  renderSession(idx);
+}
+
+function renderSession(idx) {
+  const prog = PROGRAMS[currentLevel];
+  const day = prog.weeks[currentWeekIdx][idx];
+  const isRest = day.badge === 'rest';
+  let html = `
+    <div class="session-card" style="margin-bottom:28px">
+      <div class="sc-header">
+        <div>
+          <div class="sc-title">${day.title}</div>
+          <div class="sc-meta">${day.day} &nbsp;·&nbsp; ${day.duration}${isRest?'':' training'}</div>
+        </div>
+        <span class="sc-badge badge-${day.badge}">${day.type}</span>
+      </div>
+      <ul class="drill-list">
+        ${day.drills.map((d, i) => `
+          <li class="drill-item">
+            <div class="drill-num">${isRest ? '✦' : (i+1)}</div>
+            <div class="drill-body">
+              <div class="drill-name">${d.name}</div>
+              <div class="drill-detail">${d.detail}</div>
+              ${d.reps !== '—' ? `<span class="drill-tag">${d.reps}</span>` : ''}
+            </div>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `;
+  document.getElementById('session-area').innerHTML = html;
+  document.getElementById('session-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ═══════════════════════════════════════════════════
+//  COMBOS RENDER
+// ═══════════════════════════════════════════════════
+const LEGEND = [
+  ['1','Jab'],['2','Cross'],['3','Lead Hook'],['4','Rear Hook'],
+  ['5','Lead Uppercut'],['6','Rear Uppercut'],
+  ['T','Teep'],['LK','Low Kick'],['BK','Body Kick'],['HK','Head Kick'],
+  ['EH','Horizontal Elbow'],['EU','Uppercut Elbow'],
+  ['ED','Downward Elbow'],['EX','Diagonal Elbow'],['ES','Spinning Elbow'],
+  ['KS','Straight Knee'],['KD','Diagonal Knee'],['KC','Curve Knee'],
+  ['KL','Long Knee'],['KF','Flying Knee']
+];
+
+function renderCombos() {
+  const combos = COMBOS[currentLevel];
+  const cats = ['all','punch','kick','knee','elbow','mixed'];
+
+  let html = `
+    <div class="greeting">Combo <span>Library</span></div>
+    <div class="greeting-sub">Drill each combination until it fires without thought — that's autonomy.</div>
+
+    <!-- AUTONOMY DRILL -->
+    <div class="drill-section" id="drill-section">
+      <div class="drill-section-title">⚡ Autonomy Drill</div>
+      <div class="drill-section-sub">A random combo flashes on screen. Throw it before the timer runs out. No thinking — just react.</div>
+      <div class="drill-controls">
+        <label>Category:
+          <select id="drill-cat-select" onchange="drillCategory=this.value">
+            <option value="all">All</option>
+            <option value="punch">Punches only</option>
+            <option value="kick">Kicks only</option>
+            <option value="knee">Knees only</option>
+            <option value="elbow">Elbows only</option>
+            <option value="mixed">Mixed only</option>
+          </select>
+        </label>
+        <label>Interval:
+          <select id="drill-int-select" onchange="drillInterval=+this.value">
+            <option value="4">4 sec — fast</option>
+            <option value="6" selected>6 sec — normal</option>
+            <option value="9">9 sec — slow</option>
+            <option value="0">Manual (tap to advance)</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Idle state -->
+      <div class="drill-stage active" id="drill-idle">
+        <button class="btn btn-primary" onclick="startDrill()" style="margin:0 auto">▶ Start Drill</button>
+      </div>
+
+      <!-- Active state -->
+      <div class="drill-stage" id="drill-active">
+        <div class="drill-combo-display" id="drill-display">—</div>
+        <div class="drill-combo-name" id="drill-name">—</div>
+        <div class="drill-progress-bar"><div class="drill-progress-fill" id="drill-bar"></div></div>
+        <div class="drill-count" id="drill-count"></div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="nextDrillCombo()" id="drill-next-btn">Next →</button>
+          <button class="btn btn-ghost" onclick="stopDrill()">Stop</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTATION KEY -->
+    <div class="section-title">Notation Key</div>
+    <div class="legend-grid" style="margin-bottom:24px">
+      ${LEGEND.map(([k,v]) => `<div class="legend-chip"><span class="lc-key">${k}</span>${v}</div>`).join('')}
+    </div>
+
+    <!-- FILTER -->
+    <div class="section-title">Combinations</div>
+    <div class="filter-row" id="combo-filter-row">
+      ${cats.map(c => `<button class="filter-btn ${c==='all'?'active':''}" onclick="filterCombos('${c}')">${c.charAt(0).toUpperCase()+c.slice(1)}</button>`).join('')}
+    </div>
+
+    <!-- MULTI-SELECT BAR -->
+    <div class="selection-bar" id="combo-selection-bar">
+      <span id="selection-count">0 combos selected</span>
+      <div class="btn-row" style="margin:0">
+        <button class="btn btn-primary" onclick="drillSelectedCombos()">▶ Drill Selected</button>
+        <button class="btn btn-ghost" onclick="clearComboSelection()">Clear</button>
+      </div>
+    </div>
+
+    <!-- COMBO GRID -->
+    <div class="combo-grid" id="combo-grid">
+      ${renderComboCards(combos, 'all')}
+    </div>
+  `;
+  document.getElementById('combos-inner').innerHTML = html;
+  updateSelectionBar();
+}
+
+function colourNotation(notation) {
+  return notation.split('–').map((part) => {
+    part = part.trim();
+    const isPunch   = /^[1-6]$/.test(part);
+    const isKnee    = /^K[SDLF]?$/.test(part) || part.startsWith('KS') || part.startsWith('KD') || part.startsWith('KC') || part.startsWith('KL') || part.startsWith('KF');
+    const isKick    = ['T','LK','BK','HK'].some(k => part.startsWith(k));
+    const isElbow   = /^E[H2UDXS]?$/.test(part);
+    if (isPunch)  return `<span class="hit">${part}</span>`;
+    if (isKick)   return `<span class="kick-hit">${part}</span>`;
+    if (isKnee)   return `<span style="color:#c77dff">${part}</span>`;
+    if (isElbow)  return `<span style="color:#48c78e">${part}</span>`;
+    return `<span style="color:var(--muted);font-size:0.85em">${part}</span>`;
+  }).join('<span class="sep"> – </span>');
+}
+
+function catBadge(cat) {
+  if (cat==='punch') return '<span class="combo-cat badge-punch">Punch</span>';
+  if (cat==='kick')  return '<span class="combo-cat badge-kick">Kick</span>';
+  if (cat==='knee')  return '<span class="combo-cat badge-knee">Knee</span>';
+  if (cat==='elbow') return '<span class="combo-cat badge-elbow">Elbow</span>';
+  return '<span class="combo-cat badge-mixed">Mixed</span>';
+}
+
+function renderComboCards(combos, filter) {
+  return combos
+    .filter(c => filter==='all' || c.cat===filter)
+    .map(c => `
+      <div class="combo-card ${selectedComboIds.has(c.id)?'selected':''}" data-id="${c.id}" onclick="toggleComboSelect('${c.id}')">
+        <div class="combo-card-top">
+          <div class="combo-check">${selectedComboIds.has(c.id)?'✓':''}</div>
+          <div class="combo-notation">${colourNotation(c.notation)}</div>
+        </div>
+        <div class="combo-name">${c.name}</div>
+        <div class="combo-cue">${c.cue}</div>
+        ${catBadge(c.cat)}
+      </div>
+    `).join('');
+}
+
+function filterCombos(cat) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const combos = COMBOS[currentLevel];
+  document.getElementById('combo-grid').innerHTML = renderComboCards(combos, cat);
+}
+
+// ── Combo multi-select ──
+function toggleComboSelect(id) {
+  if (selectedComboIds.has(id)) selectedComboIds.delete(id);
+  else selectedComboIds.add(id);
+  const card = document.querySelector(`.combo-card[data-id="${id}"]`);
+  if (card) {
+    card.classList.toggle('selected', selectedComboIds.has(id));
+    card.querySelector('.combo-check').textContent = selectedComboIds.has(id) ? '✓' : '';
+  }
+  updateSelectionBar();
+}
+
+function clearComboSelection() {
+  selectedComboIds.clear();
+  document.querySelectorAll('.combo-card.selected').forEach(c => {
+    c.classList.remove('selected');
+    const chk = c.querySelector('.combo-check');
+    if (chk) chk.textContent = '';
+  });
+  updateSelectionBar();
+}
+
+function updateSelectionBar() {
+  const bar = document.getElementById('combo-selection-bar');
+  if (!bar) return;
+  const n = selectedComboIds.size;
+  bar.style.display = n > 0 ? 'flex' : 'none';
+  const countEl = document.getElementById('selection-count');
+  if (countEl) countEl.textContent = `${n} combo${n===1?'':'s'} selected`;
+}
+
+function drillSelectedCombos() {
+  document.getElementById('drill-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  startDrill();
+}
+
+// ═══════════════════════════════════════════════════
+//  AUTONOMY DRILL LOGIC
+// ═══════════════════════════════════════════════════
+function buildDrillQueue() {
+  const combos = COMBOS[currentLevel];
+  let filtered;
+  if (selectedComboIds.size > 0) {
+    filtered = combos.filter(c => selectedComboIds.has(c.id));
+  } else {
+    const cat = document.getElementById('drill-cat-select')?.value || 'all';
+    filtered = cat==='all' ? combos : combos.filter(c => c.cat===cat);
+  }
+  // Shuffle
+  const arr = [...filtered];
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startDrill() {
+  drillQueue = buildDrillQueue();
+  drillIdx = 0;
+  drillCountIdx = 0;
+  drillActive = true;
+  drillInterval = +(document.getElementById('drill-int-select')?.value || 6);
+  document.getElementById('drill-idle').classList.remove('active');
+  document.getElementById('drill-active').classList.add('active');
+  showDrillCombo();
+}
+
+function showDrillCombo() {
+  if (!drillActive) return;
+  if (drillIdx >= drillQueue.length) {
+    // Re-shuffle for next loop
+    drillQueue = buildDrillQueue();
+    drillIdx = 0;
+  }
+  const combo = drillQueue[drillIdx];
+  drillCountIdx++;
+
+  const display = document.getElementById('drill-display');
+  const nameEl = document.getElementById('drill-name');
+  const countEl = document.getElementById('drill-count');
+  const bar = document.getElementById('drill-bar');
+
+  display.style.opacity = '0';
+  setTimeout(() => {
+    display.innerHTML = colourNotation(combo.notation);
+    nameEl.textContent = combo.name;
+    countEl.textContent = `Combo ${drillCountIdx}`;
+    display.style.opacity = '1';
+  }, 120);
+
+  // Progress bar
+  if (drillInterval > 0) {
+    bar.style.transition = 'none';
+    bar.style.width = '100%';
+    setTimeout(() => {
+      bar.style.transition = `width ${drillInterval}s linear`;
+      bar.style.width = '0%';
+    }, 50);
+    clearTimeout(drillTimer);
+    drillTimer = setTimeout(() => {
+      drillIdx++;
+      showDrillCombo();
+    }, drillInterval * 1000);
+    document.getElementById('drill-next-btn').textContent = 'Next →';
+  } else {
+    bar.style.transition = 'none';
+    bar.style.width = '100%';
+    document.getElementById('drill-next-btn').textContent = 'Tap to Advance →';
+  }
+}
+
+function nextDrillCombo() {
+  clearTimeout(drillTimer);
+  drillIdx++;
+  showDrillCombo();
+}
+
+function stopDrill() {
+  drillActive = false;
+  clearTimeout(drillTimer);
+  const idle = document.getElementById('drill-idle');
+  const active = document.getElementById('drill-active');
+  if (idle) { idle.classList.add('active'); active.classList.remove('active'); }
+}
+
+// ═══════════════════════════════════════════════════
+//  ROUND TIMER
+// ═══════════════════════════════════════════════════
+
+// Settings (persisted in localStorage)
+const TS_KEY = 'mt_timer_settings';
+let timerSettings = JSON.parse(localStorage.getItem(TS_KEY) || 'null') || {
+  rounds: 5, roundLength: 180, restTime: 60, leadTime: 10
+};
+function saveTimerSettings() { localStorage.setItem(TS_KEY, JSON.stringify(timerSettings)); }
+
+// Runtime state
+let tState    = 'idle';  // idle | lead | round | rest | done
+let tInterval = null;
+let tSeconds  = 0;
+let tRound    = 0;       // 1-based current round
+let tPaused   = false;
+
+// ── Audio ──
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function beep(freq, dur, vol) {
+  try {
+    const ctx = getAudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(vol || 0.4, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime + dur);
+  } catch(e) {}
+}
+function beepSequence(seq) {
+  // seq: [{freq, dur, vol, delay}]
+  seq.forEach(s => setTimeout(() => beep(s.freq, s.dur, s.vol||0.4), s.delay||0));
+}
+const SFX = {
+  roundStart: () => beepSequence([
+    {freq:880, dur:0.12, delay:0},
+    {freq:880, dur:0.12, delay:150},
+    {freq:880, dur:0.12, delay:300},
+    {freq:1320,dur:0.45, delay:500}
+  ]),
+  roundEnd: () => beepSequence([
+    {freq:660, dur:0.5, delay:0},
+    {freq:440, dur:0.5, delay:600}
+  ]),
+  restEnd: () => beepSequence([
+    {freq:880, dur:0.12, delay:0},
+    {freq:880, dur:0.12, delay:150},
+    {freq:1320,dur:0.4,  delay:300}
+  ]),
+  countdown: (n) => beep(n===1?1200:880, 0.15),
+  done: () => beepSequence([
+    {freq:523, dur:0.2, delay:0},
+    {freq:659, dur:0.2, delay:250},
+    {freq:784, dur:0.2, delay:500},
+    {freq:1047,dur:0.6, delay:750}
+  ])
+};
+
+// ── Render ──
+const RING_R = 110;
+const RING_CIRC = 2 * Math.PI * RING_R;
+
+function renderTimerScreen() {
+  document.getElementById('timer-inner').innerHTML = buildTimerHTML();
+  updateTimerUI();
+}
+
+function buildTimerHTML() {
+  const s = timerSettings;
+  return `
+    <div class="greeting">Round <span>Timer</span></div>
+    <div class="greeting-sub" style="margin-bottom:24px">Configure your session and hit Start.</div>
+
+    <!-- Phase label -->
+    <div class="timer-phase-bar">
+      <span class="timer-phase-label phase-idle" id="t-phase">READY</span>
+    </div>
+
+    <!-- Round dots -->
+    <div class="round-dots" id="t-dots">
+      ${Array.from({length: s.rounds}, (_,i) => `<div class="round-dot" id="dot-${i}"></div>`).join('')}
+    </div>
+
+    <!-- Ring -->
+    <div class="timer-ring-wrap">
+      <svg width="260" height="260" viewBox="0 0 260 260">
+        <circle class="ring-bg" cx="130" cy="130" r="${RING_R}" stroke-width="10"/>
+        <circle class="ring-fill" id="t-ring" cx="130" cy="130" r="${RING_R}"
+          stroke-width="10"
+          stroke="var(--red)"
+          stroke-dasharray="${RING_CIRC}"
+          stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-center">
+        <div class="timer-time" id="t-time">${fmtTime(s.leadTime)}</div>
+        <div class="timer-round-sub" id="t-sub">Round 1 of ${s.rounds}</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="timer-controls">
+      <button class="timer-btn timer-btn-start" id="t-start-btn" onclick="timerStartPause()">▶ Start</button>
+      <button class="timer-btn timer-btn-reset" onclick="timerReset()">↺ Reset</button>
+    </div>
+
+    <!-- Settings -->
+    <div class="timer-settings" id="t-settings">
+      <div class="settings-title">Session Settings</div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Rounds</div><div class="setting-sub">Number of rounds</div></div>
+        <div class="stepper">
+          <button class="step-btn" onclick="adjustSetting('rounds',-1)">−</button>
+          <div class="step-val" id="sv-rounds">${s.rounds}</div>
+          <button class="step-btn" onclick="adjustSetting('rounds',1)">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Round Length</div><div class="setting-sub">Duration per round</div></div>
+        <div class="stepper">
+          <button class="step-btn" onclick="adjustSetting('roundLength',-30)">−</button>
+          <div class="step-val" id="sv-roundLength">${fmtTime(s.roundLength)}</div>
+          <button class="step-btn" onclick="adjustSetting('roundLength',30)">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Rest Time</div><div class="setting-sub">Between rounds</div></div>
+        <div class="stepper">
+          <button class="step-btn" onclick="adjustSetting('restTime',-15)">−</button>
+          <div class="step-val" id="sv-restTime">${fmtTime(s.restTime)}</div>
+          <button class="step-btn" onclick="adjustSetting('restTime',15)">+</button>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <div><div class="setting-label">Lead Time</div><div class="setting-sub">Countdown before round 1</div></div>
+        <div class="stepper">
+          <button class="step-btn" onclick="adjustSetting('leadTime',-5)">−</button>
+          <div class="step-val" id="sv-leadTime">${s.leadTime}s</div>
+          <button class="step-btn" onclick="adjustSetting('leadTime',5)">+</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function fmtTime(sec) {
+  const m = Math.floor(sec/60);
+  const s = sec % 60;
+  return m > 0 ? `${m}:${String(s).padStart(2,'0')}` : `${s}s`;
+}
+
+function fmtTimeLarge(sec) {
+  const m = Math.floor(sec/60);
+  const s = sec % 60;
+  return `${String(m).padStart(1,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function adjustSetting(key, delta) {
+  const limits = {
+    rounds:      [1, 20, 1],
+    roundLength: [30, 600, 30],
+    restTime:    [0, 300, 15],
+    leadTime:    [5, 30, 5]
+  };
+  const [min, max] = limits[key];
+  timerSettings[key] = Math.min(max, Math.max(min, timerSettings[key] + delta));
+  saveTimerSettings();
+  // Update displayed value
+  const el = document.getElementById('sv-' + key);
+  if (!el) return;
+  if (key === 'rounds')      { el.textContent = timerSettings[key]; rebuildDots(); updateTimerDisplay(); }
+  else if (key === 'leadTime') { el.textContent = timerSettings[key] + 's'; updateTimerDisplay(); }
+  else { el.textContent = fmtTime(timerSettings[key]); updateTimerDisplay(); }
+}
+
+function rebuildDots() {
+  const s = timerSettings;
+  const wrap = document.getElementById('t-dots');
+  if (!wrap) return;
+  wrap.innerHTML = Array.from({length: s.rounds}, (_,i) => `<div class="round-dot" id="dot-${i}"></div>`).join('');
+  updateDots();
+}
+
+function updateDots() {
+  for (let i = 0; i < timerSettings.rounds; i++) {
+    const dot = document.getElementById('dot-'+i);
+    if (!dot) continue;
+    dot.className = 'round-dot';
+    if (tState === 'idle' || tState === 'lead') { /* all empty */ }
+    else if (i < tRound - 1) dot.classList.add('done');
+    else if (i === tRound - 1) dot.classList.add('current');
+  }
+}
+
+function updateTimerDisplay() {
+  // Called from idle — show what the first timer will look like
+  if (tState === 'idle') {
+    const timeEl = document.getElementById('t-time');
+    if (timeEl) timeEl.textContent = fmtTimeLarge(timerSettings.leadTime);
+    const subEl = document.getElementById('t-sub');
+    if (subEl) subEl.textContent = `Round 1 of ${timerSettings.rounds}`;
+  }
+}
+
+function updateTimerUI() {
+  const timeEl   = document.getElementById('t-time');
+  const subEl    = document.getElementById('t-sub');
+  const phaseEl  = document.getElementById('t-phase');
+  const ringEl   = document.getElementById('t-ring');
+  const startBtn = document.getElementById('t-start-btn');
+  const settings = document.getElementById('t-settings');
+  if (!timeEl) return;
+
+  const s = timerSettings;
+
+  // Time display
+  timeEl.textContent = fmtTimeLarge(tSeconds);
+  timeEl.className = 'timer-time' + (tState==='round' && tSeconds <= 10 && tSeconds > 0 ? ' warning' : '');
+
+  // Phase label + ring color
+  let phaseClass = 'phase-idle', phaseText = 'READY';
+  let ringColor = 'var(--muted)';
+  let totalSecs = 1;
+
+  if (tState === 'idle') {
+    phaseClass = 'phase-idle'; phaseText = 'READY';
+    ringColor = 'rgba(136,146,176,0.4)';
+    timeEl.textContent = fmtTimeLarge(s.leadTime);
+    subEl.textContent = `Round 1 of ${s.rounds}`;
+    totalSecs = s.leadTime; tSeconds = s.leadTime;
+  } else if (tState === 'lead') {
+    phaseClass = 'phase-lead'; phaseText = 'GET READY';
+    ringColor = 'var(--gold)'; totalSecs = s.leadTime;
+    subEl.textContent = `Round 1 of ${s.rounds}`;
+  } else if (tState === 'round') {
+    phaseClass = 'phase-round'; phaseText = `ROUND ${tRound}`;
+    ringColor = tSeconds <= 10 ? 'var(--red)' : '#48c78e';
+    totalSecs = s.roundLength;
+    subEl.textContent = `Round ${tRound} of ${s.rounds}`;
+  } else if (tState === 'rest') {
+    phaseClass = 'phase-rest'; phaseText = 'REST';
+    ringColor = '#6495ed'; totalSecs = s.restTime;
+    subEl.textContent = `Round ${tRound} of ${s.rounds} — up next`;
+  } else if (tState === 'done') {
+    phaseClass = 'phase-done'; phaseText = 'DONE!';
+    ringColor = '#48c78e'; totalSecs = 1; tSeconds = 0;
+    timeEl.textContent = '0:00';
+    subEl.textContent = `${s.rounds} rounds complete 🔥`;
+  }
+
+  phaseEl.className = 'timer-phase-label ' + phaseClass;
+  phaseEl.textContent = phaseText;
+  ringEl.style.stroke = ringColor;
+
+  // Ring progress
+  const fraction = totalSecs > 0 ? tSeconds / totalSecs : 0;
+  ringEl.style.strokeDashoffset = RING_CIRC * (1 - fraction);
+
+  // Start button
+  if (tState === 'idle' || tState === 'done') {
+    startBtn.className = 'timer-btn timer-btn-start';
+    startBtn.textContent = '▶ Start';
+  } else if (tPaused) {
+    startBtn.className = 'timer-btn timer-btn-start';
+    startBtn.textContent = '▶ Resume';
+  } else {
+    startBtn.className = 'timer-btn timer-btn-pause';
+    startBtn.textContent = '⏸ Pause';
+  }
+
+  // Hide settings while active
+  if (settings) settings.style.display = (tState==='idle'||tState==='done') ? 'block' : 'none';
+
+  updateDots();
+}
+
+function timerStartPause() {
+  // Unlock audio on first interaction
+  try { getAudioCtx().resume(); } catch(e) {}
+
+  if (tState === 'idle' || tState === 'done') {
+    // Fresh start
+    tRound = 1;
+    tPaused = false;
+    tState = 'lead';
+    tSeconds = timerSettings.leadTime;
+    updateTimerUI();
+    SFX.roundStart();
+    clearInterval(tInterval);
+    tInterval = setInterval(timerTick, 1000);
+  } else if (!tPaused) {
+    tPaused = true;
+    clearInterval(tInterval);
+    updateTimerUI();
+  } else {
+    tPaused = false;
+    tInterval = setInterval(timerTick, 1000);
+    updateTimerUI();
+  }
+}
+
+function timerTick() {
+  tSeconds--;
+
+  // Countdown beeps at end of each phase
+  if (tSeconds <= 3 && tSeconds > 0) {
+    if (tState === 'lead' || tState === 'round' || tState === 'rest') {
+      SFX.countdown(tSeconds);
+    }
+  }
+
+  if (tSeconds <= 0) {
+    // Transition
+    if (tState === 'lead') {
+      tState = 'round';
+      tSeconds = timerSettings.roundLength;
+      SFX.roundStart();
+    } else if (tState === 'round') {
+      SFX.roundEnd();
+      if (tRound >= timerSettings.rounds) {
+        // All done
+        tState = 'done';
+        clearInterval(tInterval);
+        tInterval = null;
+        setTimeout(SFX.done, 300);
+      } else if (timerSettings.restTime === 0) {
+        // No rest — go straight to next round
+        tRound++;
+        tState = 'round';
+        tSeconds = timerSettings.roundLength;
+        SFX.roundStart();
+      } else {
+        tState = 'rest';
+        tSeconds = timerSettings.restTime;
+      }
+    } else if (tState === 'rest') {
+      tRound++;
+      tState = 'round';
+      tSeconds = timerSettings.roundLength;
+      SFX.restEnd();
+    }
+  }
+
+  updateTimerUI();
+}
+
+function timerReset() {
+  clearInterval(tInterval);
+  tInterval = null;
+  tState = 'idle';
+  tRound = 0;
+  tPaused = false;
+  tSeconds = timerSettings.leadTime;
+  updateTimerUI();
+  // Re-show settings
+  const settings = document.getElementById('t-settings');
+  if (settings) settings.style.display = 'block';
+}
+
+init();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      // Fails harmlessly when opened directly via file:// — service workers
+      // require http(s). Works once hosted on a real domain.
+    });
+  });
+}
+</script>
+</body>
+</html>
