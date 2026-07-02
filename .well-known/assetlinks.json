@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.flyboyimj.twa",
+        "sha256_cert_fingerprints": ["BF:37:DC:25:58:6D:C5:01:44:73:84:17:0A:1C:09:B7:C9:C1:57:02:B9:34:9F:05:48:F1:A9:FD:F0:72:E1:F5"]
+      }
+    }]
