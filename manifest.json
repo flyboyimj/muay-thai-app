@@ -12,7 +12,32 @@
   "lang": "en",
   "dir": "ltr",
   "prefer_related_applications": false,
+  "display_override": ["standalone", "minimal-ui"],
+  "handle_links": "preferred",
   "categories": ["health", "fitness", "sports"],
+  "shortcuts": [
+    {
+      "name": "Start Timer",
+      "short_name": "Timer",
+      "description": "Jump straight to the round timer",
+      "url": "./index.html#timer",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Combo Library",
+      "short_name": "Combos",
+      "description": "Browse and train Muay Thai combinations",
+      "url": "./index.html#combos",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Today's Program",
+      "short_name": "Program",
+      "description": "View today's training session",
+      "url": "./index.html#program",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "icons": [
     {
       "src": "icons/icon-192.png",
