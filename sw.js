@@ -1,15 +1,19 @@
 // CoachMe — Muay Thai service worker
 // Bump CACHE_VERSION whenever index.html (or any cached asset) changes
 // so returning users get the update instead of a stale cached copy.
-const CACHE_VERSION = 'coachme-v1';
+const CACHE_VERSION = 'coachme-v2';
 const ASSETS = [
   './',
   './index.html',
+  './offline.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-192-maskable.png',
   './icons/icon-512-maskable.png',
+  './screenshots/home.png',
+  './screenshots/timer.png',
+  './screenshots/combos.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -28,9 +32,11 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Cache-first, falling back to network, with a background refresh of the cache.
+// Cache-first, falling back to network, with a background refresh.
+// If both cache and network fail, serve offline.html for navigation requests.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const networkFetch = fetch(event.request)
@@ -41,7 +47,13 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => cached);
+        .catch(async () => {
+          if (cached) return cached;
+          if (event.request.mode === 'navigate') {
+            return caches.match('./offline.html');
+          }
+          return new Response('Offline', { status: 503 });
+        });
       return cached || networkFetch;
     })
   );

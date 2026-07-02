@@ -1,6 +1,7 @@
 {
   "name": "CoachMe — Muay Thai",
   "short_name": "CoachMe",
+  "id": "/muay-thai-app/",
   "description": "Self-coaching Muay Thai training app with weekly programs, a combo library with autonomy drills, and a built-in round timer.",
   "start_url": "./index.html",
   "scope": "./",
@@ -8,6 +9,9 @@
   "orientation": "portrait-primary",
   "background_color": "#0d0d1a",
   "theme_color": "#0d0d1a",
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "categories": ["health", "fitness", "sports"],
   "icons": [
     {
@@ -33,6 +37,29 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "screenshots/home.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Weekly training program"
+    },
+    {
+      "src": "screenshots/timer.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Round timer"
+    },
+    {
+      "src": "screenshots/combos.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Combo library"
     }
   ]
 }
