@@ -1,7 +1,7 @@
 {
   "name": "CoachMe — Muay Thai",
   "short_name": "CoachMe",
-  "id": "/muay-thai-app/",
+  "id": "/",
   "description": "Self-coaching Muay Thai training app with weekly programs, a combo library with autonomy drills, and a built-in round timer.",
   "start_url": "./index.html",
   "scope": "./",
